@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: gateway
+
+gateway:
+  apis:
+    - org: exampleOrg
+      service: ExampleService
+      api: search
+      method: POST
+      host: https://x.x.x.x
+      externalPath: /api/~~~
+      key: secret-key
+      apiKey: change-me
+      insCode: insCode
