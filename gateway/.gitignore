@@ -1,3 +1,7 @@
+### custom config ###
+application.yml
+libs/EncryptModule-17.jar
+
 HELP.md
 .gradle
 build/
@@ -25,8 +29,6 @@ bin/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-
-application.yml
 
 ### NetBeans ###
 /nbproject/private/
