@@ -1,5 +1,7 @@
 package com.example.gateway.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,7 @@ import java.util.Map;
 public class UpstreamClient {
 
     private final RestClient restClient;
+    private static final Logger log = LoggerFactory.getLogger(UpstreamClient.class);
 
     public UpstreamClient(RestClient.Builder restClientBuilder) {
         this.restClient = restClientBuilder.build();
@@ -32,7 +35,8 @@ public class UpstreamClient {
             HttpStatusCode status;
             try {
                 status = ex.getStatusCode();
-            } catch (Exception ignored) {
+            } catch (Exception exception) {
+                log.warn("Failed to extract status code from RestClientResponseException, defaulting to 500: {}", exception.getMessage());
                 status = HttpStatusCode.valueOf(500);
             }
             return ResponseEntity.status(status)
