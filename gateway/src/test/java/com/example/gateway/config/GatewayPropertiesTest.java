@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class GatewayPropertiesTest {
@@ -48,5 +50,35 @@ class GatewayPropertiesTest {
             assertThat(route.apiKey()).isEqualTo("api-key");
             assertThat(route.insCode()).isEqualTo("ins");
         });
+    }
+
+    @Test
+    // setApis 이후 find가 캐시된 키로 조회되며 method 대소문자를 무시하는지 검증
+    void findUsesCachedIndexWithCaseInsensitiveMethod() {
+        // given
+        GatewayProperties props = new GatewayProperties();
+        props.setApis(List.of(new ApiRoute("o", "s", "a", "POST", "http://example.com", "/ext", "k", null, null)));
+
+        // when
+        var found = props.find("o", "s", "a", "post");
+
+        // then
+        assertThat(found).isPresent();
+        assertThat(found.get().host()).isEqualTo("http://example.com");
+    }
+
+    @Test
+    // setApis가 재호출되면 캐시가 갱신되는지 검증
+    void setApisRebuildsRouteIndex() {
+        // given
+        GatewayProperties props = new GatewayProperties();
+        props.setApis(List.of(new ApiRoute("o1", "s1", "a1", "GET", "http://example.com", "/one", "k1", null, null)));
+
+        // when
+        props.setApis(List.of(new ApiRoute("o2", "s2", "a2", "POST", "http://example.net", "/two", "k2", null, null)));
+
+        // then
+        assertThat(props.find("o1", "s1", "a1", "GET")).isEmpty();
+        assertThat(props.find("o2", "s2", "a2", "POST")).isPresent();
     }
 }
