@@ -19,6 +19,7 @@ Run commands from `gateway/`.
 Use the Gradle wrapper (`./gradlew`) instead of a system Gradle install.
 
 ## Coding Style & Naming Conventions
+- Refer to `docs/style-guide.md` for detailed style rules.
 - Java 17 and Spring Boot 3.x conventions.
 - 4-space indentation, UTF-8 source files.
 - Class/interface names: `PascalCase`; methods/fields: `camelCase`; constants: `UPPER_SNAKE_CASE`.
