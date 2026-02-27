@@ -1,0 +1,55 @@
+###
+# Mock REST API Server - IntelliJ HTTP Client
+# 실행 전: mock-rest-api-server 기동 (port 18080)
+
+@host = http://localhost:18080
+@org = catsOrg
+@service = booking
+@resourceId = R-001
+@reservationId = RSV-1700000000000
+
+### 1) 자원 목록 조회
+GET {{host}}/cats/{{org}}/{{service}}/resources?page=0&size=20
+Accept: application/json
+
+### 2) 자원 상세 조회
+GET {{host}}/cats/{{org}}/{{service}}/resources/{{resourceId}}
+Accept: application/json
+
+### 3) 자원 재고 확인
+GET {{host}}/cats/{{org}}/{{service}}/resources/{{resourceId}}/inventory?date=2026-02-26
+Accept: application/json
+
+### 4) 자원 스케줄 조회
+GET {{host}}/cats/{{org}}/{{service}}/resources/{{resourceId}}/schedules?from=2026-02-26T09:00:00%2B09:00&to=2026-02-26T21:00:00%2B09:00
+Accept: application/json
+
+### 5) 일별 스케줄 목록 조회
+GET {{host}}/cats/{{org}}/{{service}}/schedules/daily?date=2026-02-26
+Accept: application/json
+
+### 6) 예약 생성
+POST {{host}}/cats/{{org}}/{{service}}/reservations
+Content-Type: application/json
+Accept: application/json
+
+{
+  "resourceId": "R-001",
+  "scheduleId": "R-001-2026-02-26-9",
+  "userId": "user-001",
+  "quantity": 1,
+  "memo": "intellij http client sample"
+}
+
+### 7) 예약 취소
+POST {{host}}/cats/{{org}}/{{service}}/reservations/{{reservationId}}/cancel
+Content-Type: application/json
+Accept: application/json
+
+{
+  "reason": "user requested"
+}
+
+### 8) 예약 상세 조회
+GET {{host}}/cats/{{org}}/{{service}}/reservations/{{reservationId}}
+Accept: application/json
