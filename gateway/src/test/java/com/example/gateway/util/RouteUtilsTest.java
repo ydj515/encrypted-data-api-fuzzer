@@ -4,6 +4,7 @@ import com.example.gateway.config.ApiRoute;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,6 +35,26 @@ class RouteUtilsTest {
 
         // then
         assertThat(uri.toString()).isEqualTo("http://example.com/ext/path");
+    }
+
+    @Test
+    // externalPath 템플릿 변수를 전달받은 값으로 치환한다.
+    void buildsUriByExpandingTemplateVariables() {
+        ApiRoute route = new ApiRoute("o", "s", "a", "POST", "http://example.com", "/ext/{resourceId}", "k", null, null);
+
+        URI uri = RouteUtils.buildTargetUri(route, Map.of("resourceId", "R-100"));
+
+        assertThat(uri.toString()).isEqualTo("http://example.com/ext/R-100");
+    }
+
+    @Test
+    // externalPath 템플릿 변수 누락 시 예외가 발생한다.
+    void throwsWhenTemplateVariableMissing() {
+        ApiRoute route = new ApiRoute("o", "s", "a", "POST", "http://example.com", "/ext/{resourceId}", "k", null, null);
+
+        assertThatThrownBy(() -> RouteUtils.buildTargetUri(route, Map.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Missing template variable: resourceId");
     }
 
     @Test
