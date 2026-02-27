@@ -1,0 +1,103 @@
+openapi: 3.0.3
+info:
+  title: CATS Gateway API Contract (Smoke)
+  version: 1.0.0
+  description: |
+    CATS smoke(짧은 실행)용 Gateway 계약입니다.
+    full 계약보다 시나리오 범위를 축약해 빠르게 연결 상태를 점검합니다.
+servers:
+  - url: http://localhost:28080
+    description: Gateway local server
+
+paths:
+  /cats/{org}/{service}/{api}:
+    post:
+      summary: Gateway 단일 진입점 호출 (Smoke)
+      operationId: gatewayProxyPostSmoke
+      parameters:
+        - name: org
+          in: path
+          required: true
+          schema:
+            type: string
+            example: catsOrg
+        - name: service
+          in: path
+          required: true
+          schema:
+            type: string
+            example: booking
+        - name: api
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - listResources
+              - getResourceInventory
+              - createReservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+            examples:
+              listResources:
+                value:
+                  page: 0
+                  size: 20
+              getResourceInventory:
+                value:
+                  resourceId: R-001
+                  date: 2026-02-26
+              createReservation:
+                value:
+                  resourceId: R-001
+                  scheduleId: R-001-2026-02-26-9
+                  userId: user-001
+                  quantity: 1
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '201':
+          description: 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          description: 라우트 또는 리소스를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '409':
+          description: 예약 충돌/재고 부족
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '500':
+          description: 내부 서버 오류
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true

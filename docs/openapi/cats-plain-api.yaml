@@ -1,0 +1,516 @@
+openapi: 3.0.3
+info:
+  title: CATS Plain API for Gateway Fuzzing
+  version: 1.0.0
+  description: |
+    CATS 퍼저가 사용하는 평문 API 명세입니다.
+    실제 호출 경로는 Gateway를 통과하며, Gateway 이후 구간에서 암복호화가 수행됩니다.
+servers:
+  - url: http://localhost:28080
+    description: Gateway local server
+tags:
+  - name: Resource
+    description: 자원 조회/재고/스케줄 API
+  - name: Reservation
+    description: 예약 생성/취소/상세 조회 API
+paths:
+  /cats/{org}/{service}/resources:
+    get:
+      tags: [Resource]
+      summary: 자원 목록 조회
+      operationId: listResources
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /cats/{org}/{service}/resources/{resourceId}:
+    get:
+      tags: [Resource]
+      summary: 자원 상세조회
+      operationId: getResourceDetail
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /cats/{org}/{service}/resources/{resourceId}/inventory:
+    get:
+      tags: [Resource]
+      summary: 자원 재고 확인
+      operationId: getResourceInventory
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+        - $ref: "#/components/parameters/ResourceId"
+        - name: date
+          in: query
+          required: true
+          description: 조회 기준 일자 (yyyy-MM-dd)
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /cats/{org}/{service}/resources/{resourceId}/schedules:
+    get:
+      tags: [Resource]
+      summary: 자원 스케쥴 조회
+      operationId: getResourceSchedules
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+        - $ref: "#/components/parameters/ResourceId"
+        - name: from
+          in: query
+          required: true
+          description: 시작 일시 (ISO-8601)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          description: 종료 일시 (ISO-8601)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /cats/{org}/{service}/schedules/daily:
+    get:
+      tags: [Resource]
+      summary: 일별 스케쥴 목록 조회
+      operationId: listDailySchedules
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+        - name: date
+          in: query
+          required: true
+          description: 조회 일자 (yyyy-MM-dd)
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyScheduleListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /cats/{org}/{service}/reservations:
+    post:
+      tags: [Reservation]
+      summary: 예약 생성
+      operationId: createReservation
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservationCreateRequest"
+      responses:
+        "201":
+          description: 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationCreateResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: 중복/재고 부족 등 예약 충돌
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cats/{org}/{service}/reservations/{reservationId}/cancel:
+    post:
+      tags: [Reservation]
+      summary: 예약 취소
+      operationId: cancelReservation
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+        - $ref: "#/components/parameters/ReservationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservationCancelRequest"
+      responses:
+        "200":
+          description: 취소 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationCancelResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /cats/{org}/{service}/reservations/{reservationId}:
+    get:
+      tags: [Reservation]
+      summary: 예약 상세정보 조회
+      operationId: getReservationDetail
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+        - $ref: "#/components/parameters/ReservationId"
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    Org:
+      name: org
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 50
+    Service:
+      name: service
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 50
+    ResourceId:
+      name: resourceId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 100
+    ReservationId:
+      name: reservationId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 100
+
+  responses:
+    BadRequest:
+      description: 잘못된 요청
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: 리소스를 찾을 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalServerError:
+      description: 내부 서버 오류
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ResourceListResponse:
+      type: object
+      required: [items, page, size, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResourceSummary"
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          minimum: 0
+
+    ResourceSummary:
+      type: object
+      required: [resourceId, name, category, active]
+      properties:
+        resourceId:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        active:
+          type: boolean
+
+    ResourceDetail:
+      allOf:
+        - $ref: "#/components/schemas/ResourceSummary"
+        - type: object
+          required: [description, location, timezone]
+          properties:
+            description:
+              type: string
+            location:
+              type: string
+            timezone:
+              type: string
+              example: Asia/Seoul
+
+    InventoryStatus:
+      type: object
+      required:
+        [resourceId, date, totalQuantity, availableQuantity, reservedQuantity]
+      properties:
+        resourceId:
+          type: string
+        date:
+          type: string
+          format: date
+        totalQuantity:
+          type: integer
+          minimum: 0
+        availableQuantity:
+          type: integer
+          minimum: 0
+        reservedQuantity:
+          type: integer
+          minimum: 0
+
+    ScheduleListResponse:
+      type: object
+      required: [resourceId, items]
+      properties:
+        resourceId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleItem"
+
+    ScheduleItem:
+      type: object
+      required: [scheduleId, startAt, endAt, status]
+      properties:
+        scheduleId:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [AVAILABLE, RESERVED, BLOCKED]
+
+    DailyScheduleListResponse:
+      type: object
+      required: [date, items]
+      properties:
+        date:
+          type: string
+          format: date
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyScheduleItem"
+
+    DailyScheduleItem:
+      type: object
+      required: [resourceId, scheduleId, startAt, endAt, status]
+      properties:
+        resourceId:
+          type: string
+        scheduleId:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [AVAILABLE, RESERVED, BLOCKED]
+
+    ReservationCreateRequest:
+      type: object
+      required: [resourceId, scheduleId, userId, quantity]
+      properties:
+        resourceId:
+          type: string
+        scheduleId:
+          type: string
+        userId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 9999
+        memo:
+          type: string
+          maxLength: 500
+
+    ReservationCreateResponse:
+      type: object
+      required: [reservationId, status, createdAt]
+      properties:
+        reservationId:
+          type: string
+        status:
+          type: string
+          enum: [CREATED, CONFIRMED, WAITLISTED]
+        createdAt:
+          type: string
+          format: date-time
+
+    ReservationCancelRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+    ReservationCancelResponse:
+      type: object
+      required: [reservationId, status, canceledAt]
+      properties:
+        reservationId:
+          type: string
+        status:
+          type: string
+          enum: [CANCELED]
+        canceledAt:
+          type: string
+          format: date-time
+
+    ReservationDetailResponse:
+      type: object
+      required:
+        - reservationId
+        - resourceId
+        - scheduleId
+        - userId
+        - quantity
+        - status
+        - createdAt
+      properties:
+        reservationId:
+          type: string
+        resourceId:
+          type: string
+        scheduleId:
+          type: string
+        userId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [CREATED, CONFIRMED, WAITLISTED, CANCELED]
+        createdAt:
+          type: string
+          format: date-time
+        canceledAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+        traceId:
+          type: string
