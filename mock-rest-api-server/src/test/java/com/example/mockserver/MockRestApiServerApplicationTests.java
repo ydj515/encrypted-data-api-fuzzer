@@ -108,4 +108,14 @@ class MockRestApiServerApplicationTests {
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
                 .andExpect(jsonPath("$.traceId").isString());
     }
+
+    @Test
+    void malformedJsonBodyShouldReturn400() throws Exception {
+        mockMvc.perform(post("/cats/testOrg/testService/reservations")
+                        .contentType("application/json")
+                        .content("\"{\"unexpected\" $ \"token\": \"value\"}\n"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.traceId").isString());
+    }
 }
