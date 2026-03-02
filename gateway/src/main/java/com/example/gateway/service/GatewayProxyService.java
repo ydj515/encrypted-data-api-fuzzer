@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -101,9 +102,7 @@ public final class GatewayProxyService {
                 }
             }
             return variables;
-        } catch (IllegalArgumentException ex) {
-            throw ex;
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             throw new IllegalArgumentException("Invalid JSON body for externalPath template expansion", ex);
         }
     }
