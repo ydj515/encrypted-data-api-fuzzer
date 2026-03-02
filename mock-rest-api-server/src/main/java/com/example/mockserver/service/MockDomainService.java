@@ -191,10 +191,6 @@ public class MockDomainService {
         if (size < 1 || size > MAX_PAGE_SIZE) {
             throw new ApiException("INVALID_REQUEST", "size must be between 1 and " + MAX_PAGE_SIZE, HttpStatus.BAD_REQUEST.value());
         }
-        long offset = (long) page * size;
-        if (offset > Integer.MAX_VALUE) {
-            throw new ApiException("INVALID_REQUEST", "page and size produce an invalid offset", HttpStatus.BAD_REQUEST.value());
-        }
     }
 
     private void initializeSampleResources() {
