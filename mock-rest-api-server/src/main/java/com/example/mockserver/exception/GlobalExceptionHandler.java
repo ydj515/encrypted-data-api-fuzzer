@@ -3,10 +3,12 @@ package com.example.mockserver.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,7 +25,12 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    @ExceptionHandler({MethodArgumentNotValidException.class, IllegalArgumentException.class})
+    @ExceptionHandler({
+            MethodArgumentNotValidException.class,
+            IllegalArgumentException.class,
+            MethodArgumentTypeMismatchException.class,
+            DateTimeParseException.class
+    })
     public ResponseEntity<Map<String, String>> handleBadRequest(Exception ex, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of(

@@ -19,6 +19,8 @@ public class MockDomainService {
 
     private static final int DEFAULT_SAMPLE_RESOURCE_COUNT = 12;
     private static final int MIN_SCHEDULE_ITEMS = 10;
+    private static final int MAX_PAGE_SIZE = 100;
+    private static final int MAX_PAGE_NUMBER = 10_000;
 
     private final Map<String, ApiDtos.ResourceDetail> resources = new ConcurrentHashMap<>();
     private final Map<String, ReservationEntity> reservations = new ConcurrentHashMap<>();
@@ -28,14 +30,17 @@ public class MockDomainService {
     }
 
     public ApiDtos.ResourceListResponse listResources(int page, int size, String category) {
+        validateListResourcesRequest(page, size);
+
         List<ApiDtos.ResourceSummary> filtered = resources.values().stream()
                 .filter(v -> category == null || category.isBlank() || v.category().equalsIgnoreCase(category))
                 .sorted(Comparator.comparing(ApiDtos.ResourceDetail::resourceId))
                 .map(v -> new ApiDtos.ResourceSummary(v.resourceId(), v.name(), v.category(), v.active()))
                 .toList();
 
-        int from = Math.min(page * size, filtered.size());
-        int to = Math.min(from + size, filtered.size());
+        long offset = (long) page * size;
+        int from = (int) Math.min(offset, filtered.size());
+        int to = (int) Math.min(offset + size, filtered.size());
         List<ApiDtos.ResourceSummary> paged = filtered.subList(from, to);
 
         return new ApiDtos.ResourceListResponse(paged, page, size, filtered.size());
@@ -177,6 +182,19 @@ public class MockDomainService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private void validateListResourcesRequest(int page, int size) {
+        if (page < 0 || page > MAX_PAGE_NUMBER) {
+            throw new ApiException("INVALID_REQUEST", "page must be between 0 and " + MAX_PAGE_NUMBER, HttpStatus.BAD_REQUEST.value());
+        }
+        if (size < 1 || size > MAX_PAGE_SIZE) {
+            throw new ApiException("INVALID_REQUEST", "size must be between 1 and " + MAX_PAGE_SIZE, HttpStatus.BAD_REQUEST.value());
+        }
+        long offset = (long) page * size;
+        if (offset > Integer.MAX_VALUE) {
+            throw new ApiException("INVALID_REQUEST", "page and size produce an invalid offset", HttpStatus.BAD_REQUEST.value());
+        }
     }
 
     private void initializeSampleResources() {
