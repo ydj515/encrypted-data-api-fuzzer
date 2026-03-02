@@ -8,6 +8,8 @@ ORG="${ORG:-catsOrg}"
 SERVICE="${SERVICE:-booking}"
 CATS_BIN="${CATS_BIN:-cats}"
 DRY_RUN="${DRY_RUN:-false}"
+BLACKBOX="${BLACKBOX:-false}"
+SKIP_IGNORED_REPORTING="${SKIP_IGNORED_REPORTING:-false}"
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   cat <<USAGE
@@ -21,6 +23,8 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   SERVICE        path 변수 service 값 (기본: booking)
   CATS_BIN       cats 실행 파일 경로/이름 (기본: cats)
   DRY_RUN        true면 실행하지 않고 명령만 출력
+  BLACKBOX       true면 5xx만 에러로 보는 blackbox 모드 사용 (기본: false)
+  SKIP_IGNORED_REPORTING true면 ignore된 응답을 리포트에서 생략 (기본: false)
 USAGE
   exit 0
 fi
@@ -40,11 +44,17 @@ cmd=(
   "$CATS_BIN"
   -c "$CONTRACT_PATH"
   -s "$SERVER_URL"
-  -b
-  -k
   -P "org=$ORG"
   -P "service=$SERVICE"
 )
+
+if [[ "$BLACKBOX" == "true" ]]; then
+  cmd+=(-b)
+fi
+
+if [[ "$SKIP_IGNORED_REPORTING" == "true" ]]; then
+  cmd+=(-k)
+fi
 
 if [[ $# -gt 0 ]]; then
   cmd+=("$@")

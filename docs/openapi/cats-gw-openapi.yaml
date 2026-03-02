@@ -5,6 +5,7 @@ info:
   description: |
     CATS -> Gateway -> Mock REST API Server 체인 테스트용 OpenAPI 입니다.
     Gateway의 단일 진입점(POST /cats/{org}/{service}/{api})에 맞춘 계약입니다.
+    Gateway는 비정상 요청을 400, 지원하지 않는 메서드를 405, 업스트림 연결 실패를 503으로 반환합니다.
 servers:
   - url: http://localhost:28080
     description: Gateway local server
@@ -100,8 +101,12 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
         "409":
           $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -115,6 +120,7 @@ components:
         type: string
         minLength: 1
         maxLength: 50
+        pattern: '^[A-Za-z0-9._-]{1,50}$'
       example: catsOrg
     Service:
       name: service
@@ -124,6 +130,7 @@ components:
         type: string
         minLength: 1
         maxLength: 50
+        pattern: '^[A-Za-z0-9._-]{1,50}$'
       example: booking
     Api:
       name: api
@@ -131,6 +138,7 @@ components:
       required: true
       schema:
         type: string
+        pattern: '^[A-Za-z0-9._-]{1,50}$'
         enum:
           - listResources
           - getResourceDetail
@@ -154,8 +162,20 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+    MethodNotAllowed:
+      description: 지원하지 않는 HTTP 메서드
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
     Conflict:
       description: 예약 충돌/재고 부족
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServiceUnavailable:
+      description: 업스트림 서비스 연결 실패
       content:
         application/json:
           schema:
@@ -177,8 +197,10 @@ components:
       properties:
         resourceId:
           type: string
+          pattern: '^[A-Za-z0-9._-]{1,100}$'
         reservationId:
           type: string
+          pattern: '^[A-Za-z0-9._-]{1,100}$'
         date:
           type: string
           format: date
@@ -191,6 +213,7 @@ components:
         page:
           type: integer
           minimum: 0
+          maximum: 10000
         size:
           type: integer
           minimum: 1
@@ -410,11 +433,13 @@ components:
 
     ErrorResponse:
       type: object
-      required: [message]
+      required: [code, message, traceId]
       properties:
         code:
           type: string
+          example: INVALID_REQUEST
         message:
           type: string
+          example: Request body is not valid JSON
         traceId:
           type: string
