@@ -64,12 +64,12 @@ this repository is encrypted-data-api-fuzzer
   - Gateway: `gateway` (`28080`)
 
 ```bash
-cd /Users/dongjin/dev/study/encrypted-data-api-fuzzer/mock-rest-api-server
+cd mock-rest-api-server
 ./gradlew bootRun
 ```
 
 ```bash
-cd /Users/dongjin/dev/study/encrypted-data-api-fuzzer/gateway
+cd gateway
 ./gradlew bootRun
 ```
 
@@ -85,7 +85,7 @@ cd /Users/dongjin/dev/study/encrypted-data-api-fuzzer/gateway
 
 ```bash
 BLACKBOX=true SKIP_IGNORED_REPORTING=true \
-/Users/dongjin/dev/study/encrypted-data-api-fuzzer/scripts/run-cats-gw-smoke.sh
+/scripts/run-cats-gw-smoke.sh
 ```
 
 ### Blackbox 모드란?
@@ -139,19 +139,19 @@ BLACKBOX=true SKIP_IGNORED_REPORTING=true \
 - 기본값은 일반 모드입니다. 필요 시 smoke와 동일하게 `BLACKBOX`, `SKIP_IGNORED_REPORTING`을 사용할 수 있습니다.
 
 ```bash
-/Users/dongjin/dev/study/encrypted-data-api-fuzzer/scripts/run-cats-gw-full.sh
+./scripts/run-cats-gw-full.sh
 ```
 
 ```bash
 BLACKBOX=true SKIP_IGNORED_REPORTING=true \
-/Users/dongjin/dev/study/encrypted-data-api-fuzzer/scripts/run-cats-gw-full.sh
+./scripts/run-cats-gw-full.sh
 ```
 
 ### 기존 스크립트 호환
 - `scripts/run-cats-gw.sh`는 full 모드 래퍼입니다.
 
 ```bash
-/Users/dongjin/dev/study/encrypted-data-api-fuzzer/scripts/run-cats-gw.sh
+./scripts/run-cats-gw.sh
 ```
 
 ### 환경변수 오버라이드
