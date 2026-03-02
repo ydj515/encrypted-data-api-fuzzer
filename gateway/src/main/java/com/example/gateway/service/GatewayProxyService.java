@@ -13,9 +13,12 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 public final class GatewayProxyService {
+
+    private static final Pattern PATH_VARIABLE_PATTERN = Pattern.compile("^[A-Za-z0-9._-]{1,100}$");
 
     private final CryptoModule cryptoModule;
     private final ChecksumModule checksumModule;
@@ -42,6 +45,10 @@ public final class GatewayProxyService {
     }
 
     public ResponseEntity<String> proxyPost(String org, String service, String api, String plainBody) {
+        validatePathSegment("org", org);
+        validatePathSegment("service", service);
+        validatePathSegment("api", api);
+
         ApiRoute route = routeResolver.resolve(org, service, api, "POST");
 
         String encryptedData = cryptoModule.encrypt(route.key(), plainBody);
@@ -77,7 +84,9 @@ public final class GatewayProxyService {
             for (String variable : requiredVariables) {
                 Object directValue = payload.get(variable);
                 if (directValue != null) {
-                    variables.put(variable, String.valueOf(directValue));
+                    String value = String.valueOf(directValue);
+                    validatePathVariable(variable, value);
+                    variables.put(variable, value);
                     continue;
                 }
 
@@ -85,13 +94,32 @@ public final class GatewayProxyService {
                 if (pathVariables instanceof Map<?, ?> nested) {
                     Object nestedValue = nested.get(variable);
                     if (nestedValue != null) {
-                        variables.put(variable, String.valueOf(nestedValue));
+                        String value = String.valueOf(nestedValue);
+                        validatePathVariable(variable, value);
+                        variables.put(variable, value);
                     }
                 }
             }
             return variables;
+        } catch (IllegalArgumentException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw new IllegalArgumentException("Invalid JSON body for externalPath template expansion", ex);
+        }
+    }
+
+    private void validatePathVariable(String variableName, String value) {
+        if (!PATH_VARIABLE_PATTERN.matcher(value).matches()) {
+            throw new IllegalArgumentException("Invalid path variable format: " + variableName);
+        }
+    }
+
+    private void validatePathSegment(String segmentName, String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Invalid path segment: " + segmentName);
+        }
+        if (!PATH_VARIABLE_PATTERN.matcher(value).matches()) {
+            throw new IllegalArgumentException("Invalid path segment format: " + segmentName);
         }
     }
 }
