@@ -3,6 +3,7 @@ package com.example.gateway.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -48,7 +49,11 @@ public class GatewayExceptionHandler {
     public ResponseEntity<Map<String, String>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex,
                                                                         HttpServletRequest request) {
         String message = "HTTP method not supported: " + ex.getMethod();
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED);
+        if (ex.getSupportedMethods() != null && ex.getSupportedMethods().length > 0) {
+            responseBuilder.header(HttpHeaders.ALLOW, String.join(", ", ex.getSupportedMethods()));
+        }
+        return responseBuilder
                 .body(errorBody("METHOD_NOT_ALLOWED", message, request));
     }
 
@@ -67,9 +72,10 @@ public class GatewayExceptionHandler {
     }
 
     private Map<String, String> errorBody(String code, String message, HttpServletRequest request) {
+        String resolvedMessage = message != null ? message : "Unexpected error";
         return Map.of(
                 "code", code,
-                "message", message,
+                "message", resolvedMessage,
                 "traceId", traceId(request)
         );
     }

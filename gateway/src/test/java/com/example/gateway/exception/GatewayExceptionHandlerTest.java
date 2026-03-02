@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.ResourceAccessException;
@@ -43,9 +44,25 @@ class GatewayExceptionHandlerTest {
     }
 
     @Test
+    void shouldReturnFallbackMessageWhenIllegalArgumentExceptionHasNullMessage() throws Exception {
+        when(gatewayProxyService.proxyPost(anyString(), anyString(), anyString(), anyString()))
+                .thenThrow(new IllegalArgumentException((String) null));
+
+        mockMvc.perform(post("/cats/catsOrg/booking/getResourceInventory")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"date\":\"2026-03-02\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Unexpected error"))
+                .andExpect(jsonPath("$.traceId").isString());
+    }
+
+    @Test
     void shouldReturn405WhenMethodIsNotAllowed() throws Exception {
         mockMvc.perform(get("/cats/catsOrg/booking/getResourceInventory"))
                 .andExpect(status().isMethodNotAllowed())
+                .andExpect(result -> org.assertj.core.api.Assertions.assertThat(
+                        result.getResponse().getHeader(HttpHeaders.ALLOW)).contains("POST"))
                 .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"))
                 .andExpect(jsonPath("$.message").value("HTTP method not supported: GET"))
                 .andExpect(jsonPath("$.traceId").isString());
