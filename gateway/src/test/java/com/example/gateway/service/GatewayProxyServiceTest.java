@@ -130,4 +130,20 @@ class GatewayProxyServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Missing template variable: resourceId");
     }
+
+    @Test
+    // path 변수에 주입성 문자열이 들어오면 업스트림 호출 전에 400 대상 예외로 차단한다.
+    void proxyPostThrowsWhenTemplateVariableHasInvalidFormat() {
+        ApiRoute templateRoute = new ApiRoute(
+                "o", "s", "inventory", "POST", "http://example.com",
+                "/resources/{resourceId}/inventory", "key", null, null
+        );
+        when(routeResolver.resolve("o", "s", "inventory", "POST")).thenReturn(templateRoute);
+        when(cryptoModule.encrypt("key", "{\"resourceId\":\"; ls -la\",\"date\":\"2026-03-02\"}")).thenReturn("encrypted");
+        when(checksumModule.checksum("encrypted")).thenReturn("chk");
+
+        assertThatThrownBy(() -> gatewayProxyService.proxyPost("o", "s", "inventory", "{\"resourceId\":\"; ls -la\",\"date\":\"2026-03-02\"}"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid path variable format: resourceId");
+    }
 }

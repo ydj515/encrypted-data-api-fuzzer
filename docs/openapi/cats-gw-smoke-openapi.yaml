@@ -1,103 +1,316 @@
 openapi: 3.0.3
 info:
   title: CATS Gateway API Contract (Smoke)
-  version: 1.0.0
+  version: 2.1.0
   description: |
     CATS smoke(짧은 실행)용 Gateway 계약입니다.
-    full 계약보다 시나리오 범위를 축약해 빠르게 연결 상태를 점검합니다.
+    단일 /cats/{org}/{service}/{api} 엔드포인트를 실제 호출 가능한 구체 경로 3개로 분리해
+    각 시나리오의 요청 필수값과 허용 필드를 명확하게 표현합니다.
+    Gateway는 비정상 요청을 400, 지원하지 않는 메서드를 405, 업스트림 연결 실패를 503으로 반환합니다.
+    CATS가 실제 요청을 생성할 수 있도록 smoke 계약은 full 계약보다 일부 제약을 완화합니다.
 servers:
   - url: http://localhost:28080
     description: Gateway local server
 
+tags:
+  - name: Gateway Smoke
+    description: smoke 모드용 핵심 시나리오 3종
+
 paths:
-  /cats/{org}/{service}/{api}:
+  /cats/{org}/{service}/listResources:
     post:
-      summary: Gateway 단일 진입점 호출 (Smoke)
-      operationId: gatewayProxyPostSmoke
+      tags: [Gateway Smoke]
+      summary: 자원 목록 조회
+      operationId: gatewayListResources
       parameters:
-        - name: org
-          in: path
-          required: true
-          schema:
-            type: string
-            example: catsOrg
-        - name: service
-          in: path
-          required: true
-          schema:
-            type: string
-            example: booking
-        - name: api
-          in: path
-          required: true
-          schema:
-            type: string
-            enum:
-              - listResources
-              - getResourceInventory
-              - createReservation
+        - $ref: '#/components/parameters/Org'
+        - $ref: '#/components/parameters/Service'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
-            examples:
-              listResources:
-                value:
-                  page: 0
-                  size: 20
-              getResourceInventory:
-                value:
-                  resourceId: R-001
-                  date: 2026-02-26
-              createReservation:
-                value:
-                  resourceId: R-001
-                  scheduleId: R-001-2026-02-26-9
-                  userId: user-001
-                  quantity: 1
+              $ref: '#/components/schemas/ListResourcesRequest'
+            example:
+              page: 0
+              size: 20
+              category: SPACE
       responses:
         '200':
           description: 성공
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/ResourceListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /cats/{org}/{service}/getResourceInventory:
+    post:
+      tags: [Gateway Smoke]
+      summary: 자원 재고 확인
+      operationId: gatewayGetResourceInventory
+      parameters:
+        - $ref: '#/components/parameters/Org'
+        - $ref: '#/components/parameters/Service'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetResourceInventoryRequest'
+            example:
+              resourceId: R-001
+              date: 2026-02-26
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryStatus'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /cats/{org}/{service}/createReservation:
+    post:
+      tags: [Gateway Smoke]
+      summary: 예약 생성
+      operationId: gatewayCreateReservation
+      parameters:
+        - $ref: '#/components/parameters/Org'
+        - $ref: '#/components/parameters/Service'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReservationRequest'
+            example:
+              resourceId: R-001
+              scheduleId: R-001-2026-02-26-9
+              userId: user-001
+              quantity: 1
+              memo: cats smoke
+      responses:
         '201':
           description: 생성 성공
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/ReservationCreateResponse'
         '400':
-          description: 잘못된 요청
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: 라우트 또는 리소스를 찾을 수 없음
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
+          $ref: '#/components/responses/NotFound'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
         '409':
-          description: 예약 충돌/재고 부족
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
         '500':
-          description: 내부 서버 오류
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    Org:
+      name: org
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 50
+      example: catsOrg
+    Service:
+      name: service
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 50
+      example: booking
+
+  responses:
+    BadRequest:
+      description: 잘못된 요청
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: 라우트 또는 리소스를 찾을 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    MethodNotAllowed:
+      description: 지원하지 않는 HTTP 메서드
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: 예약 충돌 또는 재고 부족
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServiceUnavailable:
+      description: 업스트림 서비스 연결 실패
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: 내부 서버 오류
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ListResourcesRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        page:
+          type: integer
+          minimum: 0
+          default: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        category:
+          type: string
+          minLength: 1
+          maxLength: 50
+
+    GetResourceInventoryRequest:
+      type: object
+      additionalProperties: true
+      required: [resourceId, date]
+      properties:
+        resourceId:
+          type: string
+          minLength: 1
+          maxLength: 100
+        date:
+          type: string
+          format: date
+
+    CreateReservationRequest:
+      type: object
+      additionalProperties: true
+      required: [resourceId, scheduleId, userId, quantity]
+      properties:
+        resourceId:
+          type: string
+          minLength: 1
+          maxLength: 100
+        scheduleId:
+          type: string
+          minLength: 1
+          maxLength: 100
+        userId:
+          type: string
+          minLength: 1
+          maxLength: 100
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 9999
+        memo:
+          type: string
+          maxLength: 500
+
+    ResourceListResponse:
+      type: object
+      required: [items, page, size, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceSummary'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          minimum: 0
+
+    ResourceSummary:
+      type: object
+      required: [resourceId, name, category, active]
+      properties:
+        resourceId:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        active:
+          type: boolean
+
+    InventoryStatus:
+      type: object
+      required: [resourceId, date, totalQuantity, availableQuantity, reservedQuantity]
+      properties:
+        resourceId:
+          type: string
+        date:
+          type: string
+          format: date
+        totalQuantity:
+          type: integer
+        availableQuantity:
+          type: integer
+        reservedQuantity:
+          type: integer
+
+    ReservationCreateResponse:
+      type: object
+      required: [reservationId, status, createdAt]
+      properties:
+        reservationId:
+          type: string
+        status:
+          type: string
+          enum: [CREATED, CONFIRMED, WAITLISTED]
+        createdAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [code, message, traceId]
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: Request body is not valid JSON
+        traceId:
+          type: string

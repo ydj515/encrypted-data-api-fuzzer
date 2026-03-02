@@ -73,4 +73,49 @@ class MockRestApiServerApplicationTests {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data").isString());
     }
+
+    @Test
+    void invalidQueryDateShouldReturn400() throws Exception {
+        mockMvc.perform(get("/cats/testOrg/testService/schedules/daily")
+                        .queryParam("date", "2026-ABUGIDA-26"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.traceId").isString());
+    }
+
+    @Test
+    void invalidEncryptedDateTimeShouldReturn400() throws Exception {
+        String plain = objectMapper.writeValueAsString(Map.of(
+                "from", "2026-03-02T06జ్ఞ\u200cా:24:07.180279Z",
+                "to", "2026-03-02T07:24:07.180279Z"
+        ));
+        String encrypted = Base64.getEncoder().encodeToString(plain.getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(post("/cats/testOrg/testService/resources/R-001/schedules")
+                        .contentType("application/json")
+                        .content("{\"data\":\"" + encrypted + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.traceId").isString());
+    }
+
+    @Test
+    void extremePositivePageShouldReturn400() throws Exception {
+        mockMvc.perform(post("/cats/testOrg/testService/resources")
+                        .contentType("application/json")
+                        .content("{\"page\":9223372036854775807,\"size\":20}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.traceId").isString());
+    }
+
+    @Test
+    void malformedJsonBodyShouldReturn400() throws Exception {
+        mockMvc.perform(post("/cats/testOrg/testService/reservations")
+                        .contentType("application/json")
+                        .content("\"{\"unexpected\" $ \"token\": \"value\"}\n"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.traceId").isString());
+    }
 }
