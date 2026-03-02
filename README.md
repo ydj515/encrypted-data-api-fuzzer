@@ -32,7 +32,7 @@ this repository is encrypted-data-api-fuzzer
 - GW나 mock 서버가 어떤 입력을 받았는지 재현할 때 가장 중요합니다.
 
 #### 2.3 Test Response
-![CATS Test Response](docs/cats/2.2.test-response.png)
+![CATS Test Response](docs/cats/2-3.test-response.png)
 
 - 실제 응답 코드와 응답 바디를 보여줍니다.
 - 확인 포인트:
@@ -43,8 +43,8 @@ this repository is encrypted-data-api-fuzzer
 - `Expected Result`와 비교해 왜 `error` 또는 `warning`이 됐는지 판단할 수 있습니다.
 
 #### 2.4 Test Replay
-![CATS Test Replay](docs/cats/2.3.test-replay.png)
-![CATS Test Replay 2](docs/cats/2.4.test-replay2.png)
+![CATS Test Replay](docs/cats/2-4.test-replay.png)
+![CATS Test Replay 2](docs/cats/2-4.test-replay2.png)
 
 - CATS가 만든 실패 케이스를 다시 호출하는 방법을 보여줍니다.
 - 보통 `curl` 재현이나 동일 payload 재실행에 활용합니다.
