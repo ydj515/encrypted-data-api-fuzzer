@@ -15,8 +15,7 @@ public class GatewayHeaderFactory {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        headers.set(GatewayHeaderNames.X_CHECKSUM, checksum);
-
+        Optional.ofNullable(checksum).ifPresent(v -> headers.set(GatewayHeaderNames.X_CHECKSUM, v));
         Optional.ofNullable(route.apiKey()).ifPresent(value -> headers.set(GatewayHeaderNames.X_API_KEY, value));
         Optional.ofNullable(route.insCode()).ifPresent(value -> headers.set(GatewayHeaderNames.X_INS_CODE, value));
         return headers;

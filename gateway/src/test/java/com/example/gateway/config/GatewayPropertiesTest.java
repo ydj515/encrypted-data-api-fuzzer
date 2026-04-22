@@ -57,7 +57,7 @@ class GatewayPropertiesTest {
     void findUsesCachedIndexWithCaseInsensitiveMethod() {
         // given
         GatewayProperties props = new GatewayProperties();
-        props.setApis(List.of(new ApiRoute("o", "s", "a", "POST", "http://example.com", "/ext", "k", null, null)));
+        props.setApis(List.of(new ApiRoute("o", "s", "a", "POST", "http://example.com", "/ext", "k", null, null, null)));
 
         // when
         var found = props.find("o", "s", "a", "post");
@@ -72,10 +72,10 @@ class GatewayPropertiesTest {
     void setApisRebuildsRouteIndex() {
         // given
         GatewayProperties props = new GatewayProperties();
-        props.setApis(List.of(new ApiRoute("o1", "s1", "a1", "GET", "http://example.com", "/one", "k1", null, null)));
+        props.setApis(List.of(new ApiRoute("o1", "s1", "a1", "GET", "http://example.com", "/one", "k1", null, null, null)));
 
         // when
-        props.setApis(List.of(new ApiRoute("o2", "s2", "a2", "POST", "http://example.net", "/two", "k2", null, null)));
+        props.setApis(List.of(new ApiRoute("o2", "s2", "a2", "POST", "http://example.net", "/two", "k2", null, null, null)));
 
         // then
         assertThat(props.find("o1", "s1", "a1", "GET")).isEmpty();

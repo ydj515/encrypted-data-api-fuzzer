@@ -9,6 +9,10 @@ public record ApiRoute(
         String externalPath,
         String key,
         String apiKey,
-        String insCode
+        String insCode,
+        Boolean encrypted
 ) {
+    public boolean isEncrypted() {
+        return encrypted == null || encrypted;
+    }
 }

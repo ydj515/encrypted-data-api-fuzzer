@@ -20,7 +20,7 @@ class ResponseBodyDecryptorTest {
     @InjectMocks
     private ResponseBodyDecryptor decryptor;
 
-    private final ApiRoute route = new ApiRoute("o", "s", "a", "POST", "h", "/p", "secret", null, null);
+    private final ApiRoute route = new ApiRoute("o", "s", "a", "POST", "h", "/p", "secret", null, null, null);
 
     @Test
     // data 필드를 복호화하여 성공적으로 평문 반환

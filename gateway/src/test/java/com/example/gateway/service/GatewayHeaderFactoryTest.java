@@ -15,7 +15,7 @@ class GatewayHeaderFactoryTest {
     // 필수/옵션 헤더가 모두 세팅되는 성공 케이스
     void buildsHeadersWithOptionalValues() {
         // given
-        ApiRoute route = new ApiRoute("o", "s", "a", "POST", "h", "/p", "k", "apiKey", "ins");
+        ApiRoute route = new ApiRoute("o", "s", "a", "POST", "h", "/p", "k", "apiKey", "ins", null);
 
         // when
         HttpHeaders headers = factory.build(route, "chk");
@@ -32,7 +32,7 @@ class GatewayHeaderFactoryTest {
     // 옵션 값이 없으면 헤더를 생략하는 성공 케이스
     void skipsAbsentOptionalHeaders() {
         // given
-        ApiRoute route = new ApiRoute("o", "s", "a", "POST", "h", "/p", "k", null, null);
+        ApiRoute route = new ApiRoute("o", "s", "a", "POST", "h", "/p", "k", null, null, null);
 
         // when
         HttpHeaders headers = factory.build(route, "chk");

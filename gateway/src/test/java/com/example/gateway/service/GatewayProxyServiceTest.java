@@ -42,7 +42,7 @@ class GatewayProxyServiceTest {
 
     private GatewayProxyService gatewayProxyService;
 
-    private final ApiRoute route = new ApiRoute("o", "s", "a", "POST", "http://example.com", "/ext", "key", null, null);
+    private final ApiRoute route = new ApiRoute("o", "s", "a", "POST", "http://example.com", "/ext", "key", null, null, null);
 
     @BeforeEach
     void setUp() {
@@ -95,7 +95,7 @@ class GatewayProxyServiceTest {
     void proxyPostExpandsExternalPathTemplateFromBody() {
         ApiRoute templateRoute = new ApiRoute(
                 "o", "s", "inventory", "POST", "http://example.com",
-                "/resources/{resourceId}/inventory", "key", null, null
+                "/resources/{resourceId}/inventory", "key", null, null, null
         );
         when(routeResolver.resolve("o", "s", "inventory", "POST")).thenReturn(templateRoute);
         when(cryptoModule.encrypt("key", "{\"resourceId\":\"R-100\"}")).thenReturn("encrypted");
@@ -120,7 +120,7 @@ class GatewayProxyServiceTest {
     void proxyPostThrowsWhenTemplateVariableMissing() {
         ApiRoute templateRoute = new ApiRoute(
                 "o", "s", "inventory", "POST", "http://example.com",
-                "/resources/{resourceId}/inventory", "key", null, null
+                "/resources/{resourceId}/inventory", "key", null, null, null
         );
         when(routeResolver.resolve("o", "s", "inventory", "POST")).thenReturn(templateRoute);
         when(cryptoModule.encrypt("key", "{\"foo\":\"bar\"}")).thenReturn("encrypted");
@@ -136,7 +136,7 @@ class GatewayProxyServiceTest {
     void proxyPostThrowsWhenTemplateVariableHasInvalidFormat() {
         ApiRoute templateRoute = new ApiRoute(
                 "o", "s", "inventory", "POST", "http://example.com",
-                "/resources/{resourceId}/inventory", "key", null, null
+                "/resources/{resourceId}/inventory", "key", null, null, null
         );
         when(routeResolver.resolve("o", "s", "inventory", "POST")).thenReturn(templateRoute);
         when(cryptoModule.encrypt("key", "{\"resourceId\":\"; ls -la\",\"date\":\"2026-03-02\"}")).thenReturn("encrypted");

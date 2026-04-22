@@ -17,7 +17,7 @@ class RouteResolverTest {
     void resolveReturnsMatchingRoute() {
         // given
         GatewayProperties props = new GatewayProperties();
-        props.setApis(List.of(new ApiRoute("o", "s", "a", "POST", "http://example.com", "/ext", "k", null, null)));
+        props.setApis(List.of(new ApiRoute("o", "s", "a", "POST", "http://example.com", "/ext", "k", null, null, null)));
         RouteResolver resolver = new RouteResolver(props);
 
         // when

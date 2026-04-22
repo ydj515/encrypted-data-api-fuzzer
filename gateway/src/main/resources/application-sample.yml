@@ -16,3 +16,13 @@ gateway:
       key: secret-key
       apiKey: change-me
       insCode: insCode
+      # encrypted: true  # 기본값. 생략하면 암복호화 수행
+    - org: exampleOrg
+      service: PlainService
+      api: plainSearch
+      method: POST
+      host: https://y.y.y.y
+      externalPath: /api/plain
+      apiKey: change-me
+      insCode: insCode
+      encrypted: false  # 암복호화 생략 — key 불필요, 요청/응답 그대로 전달

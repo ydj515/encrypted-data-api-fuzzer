@@ -51,19 +51,20 @@ public final class GatewayProxyService {
         validatePathSegment("api", api);
 
         ApiRoute route = routeResolver.resolve(org, service, api, "POST");
-
-        String encryptedData = cryptoModule.encrypt(route.key(), plainBody);
-        String checksum = checksumModule.checksum(encryptedData);
-
         URI targetUri = buildTargetUri(route, plainBody);
-        var headers = gatewayHeaderFactory.build(route, checksum);
 
-        Map<String, Object> requestBody = Map.of("data", encryptedData);
+        if (route.isEncrypted()) {
+            String encryptedData = cryptoModule.encrypt(route.key(), plainBody);
+            String checksum = checksumModule.checksum(encryptedData);
+            var headers = gatewayHeaderFactory.build(route, checksum);
+            ResponseEntity<String> upstream = upstreamClient.post(targetUri, headers, Map.of("data", encryptedData));
+            return ResponseEntity.status(upstream.getStatusCode())
+                    .body(responseBodyDecryptor.decrypt(route, upstream.getBody()));
+        }
 
-        ResponseEntity<String> upstreamResponse = upstreamClient.post(targetUri, headers, requestBody);
-        String decryptedBody = responseBodyDecryptor.decrypt(route, upstreamResponse.getBody());
-
-        return ResponseEntity.status(upstreamResponse.getStatusCode()).body(decryptedBody);
+        var headers = gatewayHeaderFactory.build(route, null);
+        ResponseEntity<String> upstream = upstreamClient.post(targetUri, headers, parseBody(plainBody));
+        return ResponseEntity.status(upstream.getStatusCode()).body(upstream.getBody());
     }
 
     private URI buildTargetUri(ApiRoute route, String plainBody) {
@@ -76,35 +77,38 @@ public final class GatewayProxyService {
         return RouteUtils.buildTargetUri(route, variableValues);
     }
 
-    private Map<String, String> parseTemplateVariables(String plainBody, Set<String> requiredVariables) {
+    private Map<String, Object> parseBody(String plainBody) {
         try {
-            Map<String, Object> payload = objectMapper.readValue(plainBody, new TypeReference<>() {
-            });
-            Map<String, String> variables = new HashMap<>();
+            return objectMapper.readValue(plainBody, new TypeReference<>() {});
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Invalid JSON body", ex);
+        }
+    }
 
-            for (String variable : requiredVariables) {
-                Object directValue = payload.get(variable);
-                if (directValue != null) {
-                    String value = String.valueOf(directValue);
+    private Map<String, String> parseTemplateVariables(String plainBody, Set<String> requiredVariables) {
+        Map<String, Object> payload = parseBody(plainBody);
+        Map<String, String> variables = new HashMap<>();
+
+        for (String variable : requiredVariables) {
+            Object directValue = payload.get(variable);
+            if (directValue != null) {
+                String value = String.valueOf(directValue);
+                validatePathVariable(variable, value);
+                variables.put(variable, value);
+                continue;
+            }
+
+            Object pathVariables = payload.get("pathVariables");
+            if (pathVariables instanceof Map<?, ?> nested) {
+                Object nestedValue = nested.get(variable);
+                if (nestedValue != null) {
+                    String value = String.valueOf(nestedValue);
                     validatePathVariable(variable, value);
                     variables.put(variable, value);
-                    continue;
-                }
-
-                Object pathVariables = payload.get("pathVariables");
-                if (pathVariables instanceof Map<?, ?> nested) {
-                    Object nestedValue = nested.get(variable);
-                    if (nestedValue != null) {
-                        String value = String.valueOf(nestedValue);
-                        validatePathVariable(variable, value);
-                        variables.put(variable, value);
-                    }
                 }
             }
-            return variables;
-        } catch (IOException ex) {
-            throw new IllegalArgumentException("Invalid JSON body for externalPath template expansion", ex);
         }
+        return variables;
     }
 
     private void validatePathVariable(String variableName, String value) {
