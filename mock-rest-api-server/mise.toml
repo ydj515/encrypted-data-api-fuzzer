@@ -1,3 +1,18 @@
 [tools]
-java = "17.0.2"
+java = "21.0.2"
 
+[tasks.run]
+description = "Start the mock REST API server (port 18080)"
+run = "./gradlew bootRun"
+
+[tasks.build]
+description = "Compile, test, and package"
+run = "./gradlew build"
+
+[tasks.test]
+description = "Run JUnit 5 test suite"
+run = "./gradlew test"
+
+[tasks.clean]
+description = "Clean build artifacts"
+run = "./gradlew clean"

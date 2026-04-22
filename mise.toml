@@ -1,0 +1,38 @@
+[tools]
+java = "21.0.2"
+
+# --- Individual service launchers ---
+
+[tasks."gateway:run"]
+description = "Start gateway service"
+run = "cd gateway && ./gradlew bootRun"
+
+[tasks."mock:run"]
+description = "Start mock-rest-api-server (port 18080)"
+run = "cd mock-rest-api-server && ./gradlew bootRun"
+
+# --- Aggregate tasks (sequential) ---
+
+[tasks.build]
+description = "Build all modules sequentially (gateway → mock)"
+run = """
+set -e
+(cd gateway && ./gradlew build)
+(cd mock-rest-api-server && ./gradlew build)
+"""
+
+[tasks.test]
+description = "Test all modules sequentially (gateway → mock)"
+run = """
+set -e
+(cd gateway && ./gradlew test)
+(cd mock-rest-api-server && ./gradlew test)
+"""
+
+[tasks.clean]
+description = "Clean all modules"
+run = """
+set -e
+(cd gateway && ./gradlew clean)
+(cd mock-rest-api-server && ./gradlew clean)
+"""
