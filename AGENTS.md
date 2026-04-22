@@ -1,43 +1,31 @@
-# Repository Guidelines
+# encrypted-data-api-fuzzer
 
-## Project Structure & Module Organization
-This repository is a single Gradle module under `gateway/`.
-- `gateway/src/main/java/com/example/gateway`: application code (controller, service, config, crypto, util, exception).
-- `gateway/src/main/resources`: runtime config templates such as `application-sample.yml`.
-- `gateway/src/test/java/com/example/gateway`: unit and Spring context tests mirroring main package paths.
-- `gateway/libs`: local JAR dependencies loaded via `fileTree`.
+Two Spring Boot services for testing encrypted API proxy flows.
 
-Keep new classes in the closest existing package by responsibility (e.g., routing logic in `service` or `util`, API models in `config` only when config-bound).
+## Table of Contents
 
-## Build, Test, and Development Commands
-Run commands from `gateway/`.
-- `./gradlew bootRun`: start the Spring Boot app locally.
-- `./gradlew test`: run JUnit 5 test suite.
-- `./gradlew build`: compile, test, and produce build artifacts.
-- `./gradlew clean build`: rebuild from scratch when dependencies or generated outputs are stale.
+| Topic | Document |
+|---|---|
+| Project structure & architecture | [docs/architecture.md](docs/architecture.md) |
+| Runtime environment & mise tasks | [docs/development.md](docs/development.md) |
+| Coding style & naming conventions | [docs/style-guide.md](docs/style-guide.md) |
+| Testing guidelines | [docs/testing.md](docs/testing.md) |
+| Commit & PR guidelines | [docs/contributing.md](docs/contributing.md) |
+| Security & configuration | [docs/security.md](docs/security.md) |
 
-Use the Gradle wrapper (`./gradlew`) instead of a system Gradle install.
+## Modules
 
-## Coding Style & Naming Conventions
-- Refer to `docs/style-guide.md` for detailed style rules.
-- Java 17 and Spring Boot 3.x conventions.
-- 4-space indentation, UTF-8 source files.
-- Class/interface names: `PascalCase`; methods/fields: `camelCase`; constants: `UPPER_SNAKE_CASE`.
-- Prefer constructor injection and `final` fields for services.
-- Keep methods focused; extract reusable URI/header/crypto logic into dedicated helpers/services.
+| Module | Description | Guidelines |
+|---|---|---|
+| [`gateway/`](gateway/) | Encrypted API proxy (port 8080) | [gateway/AGENTS.md](gateway/AGENTS.md) |
+| [`mock-rest-api-server/`](mock-rest-api-server/) | Mock upstream API (port 18080) | [mock-rest-api-server/AGENTS.md](mock-rest-api-server/AGENTS.md) |
 
-## Testing Guidelines
-- Framework: `spring-boot-starter-test` (JUnit 5).
-- Test class naming: `<ClassName>Test` (e.g., `RouteResolverTest`).
-- Add tests for new behavior and edge cases, especially route resolution, checksum/encryption flow, and response decryption/error handling.
-- Run `./gradlew test` before opening a PR.
+## Quick Start
 
-## Commit & Pull Request Guidelines
-Git history follows Conventional Commit-style prefixes: `feat:`, `fix:`, `refactor:`, `test:`, `chore:`, `docs:`, `build:`.
-- Keep commits small and scoped to one logical change.
-- PRs should include: purpose, key changes, test evidence (command/results), and related issue/PR links.
-- If API behavior changes, include request/response examples.
-
-## Security & Configuration Tips
-- Never commit real secrets or production keys.
-- Keep sample values in `application-sample.yml`; inject real values via environment variables or secure secret stores.
+```shell
+mise install           # install Java 21.0.2 (run once per machine)
+mise run gateway:run   # start gateway service
+mise run mock:run      # start mock server
+mise run test          # run all tests sequentially
+mise run build         # build all modules
+```
