@@ -21,6 +21,10 @@ set -e
 (cd mock-rest-api-server && ./gradlew build)
 """
 
+[tasks."karate:run"]
+description = "Run Karate scenario tests (ORG/SERVICE/API env vars for scope)"
+run = "cd karate-tests && ./gradlew test"
+
 [tasks.test]
 description = "Test all modules sequentially (gateway → mock)"
 run = """
@@ -28,6 +32,10 @@ set -e
 (cd gateway && ./gradlew test)
 (cd mock-rest-api-server && ./gradlew test)
 """
+
+[tasks."report:run"]
+description = "Start report-server (port 48080)"
+run = "cd report-server && ./gradlew bootRun"
 
 [tasks.clean]
 description = "Clean all modules"

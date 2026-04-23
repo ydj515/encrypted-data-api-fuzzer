@@ -2,6 +2,12 @@
 *.class
 bin/
 
+### Gradle ###
+.gradle/
+.gradle-home/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
 ### OS ###
 .DS_Store
 Thumbs.db
