@@ -104,7 +104,9 @@ cd gateway
 ```
 
 ### Smoke 모드 (짧은 실행)
-- 축약 계약 파일: `docs/openapi/cats-gw-smoke-openapi.yaml`
+- Gateway 계약 디렉터리: `docs/openapi/gateway/`
+- mock REST API 계약 디렉터리: `docs/openapi/mock-rest-api-server/`
+- Smoke 실행은 `ORG/SERVICE` 기준으로 gateway 계약 파일을 자동 선택합니다.
 - 기본값은 일반 모드입니다. `2xx/4xx/5xx`가 모두 리포트에 반영됩니다.
 
 ```bash
@@ -165,7 +167,11 @@ BLACKBOX=true SKIP_IGNORED_REPORTING=true \
   - CI에서 5xx 발생 여부만 빠르게 게이트로 삼고 싶을 때
 
 ### Full 모드 (전체 실행)
-- 전체 계약 파일: `docs/openapi/cats-gw-openapi.yaml`
+- booking 기본 계약 파일: `docs/openapi/gateway/cats-gw-openapi.yaml`
+- 서비스별 예시:
+  - `docs/openapi/gateway/orgA-A-gw-openapi.yaml`
+  - `docs/openapi/gateway/orgB-visit-gw-openapi.yaml`
+  - `docs/openapi/gateway/orgB-support-gw-openapi.yaml`
 - 기본값은 일반 모드입니다. 필요 시 smoke와 동일하게 `BLACKBOX`, `SKIP_IGNORED_REPORTING`을 사용할 수 있습니다.
 
 ```bash

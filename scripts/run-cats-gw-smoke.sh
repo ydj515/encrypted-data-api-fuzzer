@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CONTRACT_PATH="${CONTRACT_PATH:-$ROOT_DIR/docs/openapi/cats-gw-smoke-openapi.yaml}"
-SERVER_URL="${SERVER_URL:-http://localhost:28080}"
 ORG="${ORG:-catsOrg}"
 SERVICE="${SERVICE:-booking}"
 API="${API:-}"
+DEFAULT_CONTRACT_PATH="$(bash "$SCRIPT_DIR/resolve-cats-contract.sh" "$ORG" "$SERVICE" smoke)"
+CONTRACT_PATH="${CONTRACT_PATH:-$DEFAULT_CONTRACT_PATH}"
+SERVER_URL="${SERVER_URL:-http://localhost:28080}"
 CATS_BIN="${CATS_BIN:-cats}"
 DRY_RUN="${DRY_RUN:-false}"
 BLACKBOX="${BLACKBOX:-false}"
@@ -18,7 +20,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   $(basename "$0") [추가 cats 인자...]
 
 환경변수(선택):
-  CONTRACT_PATH  OpenAPI 파일 경로 (기본: docs/openapi/cats-gw-smoke-openapi.yaml)
+  CONTRACT_PATH  OpenAPI 파일 경로 (기본: ORG/SERVICE에 맞는 gateway 계약 자동 선택, smoke 전용 파일이 없으면 full 계약 사용)
   SERVER_URL     Gateway 서버 URL (기본: http://localhost:28080)
   ORG            path 변수 org 값 (기본: catsOrg)
   SERVICE        path 변수 service 값 (기본: booking)
@@ -67,6 +69,7 @@ if [[ $# -gt 0 ]]; then
 fi
 
 echo "[정보] SMOKE 모드 실행 명령:"
+echo "[정보] 계약 파일: $CONTRACT_PATH"
 printf ' %q' "${cmd[@]}"
 echo
 

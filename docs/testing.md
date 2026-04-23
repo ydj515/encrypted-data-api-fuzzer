@@ -69,13 +69,22 @@ Scope can be narrowed with `ORG`, `SERVICE`, and `API`.
 ```shell
 ORG=catsOrg SERVICE=booking API=createReservation SOURCE=karate mise run test
 ORG=catsOrg SERVICE=booking API=listResources SOURCE=cats mise run test
+ORG=orgA SERVICE=A API=createReservation SOURCE=karate mise run test
+ORG=orgB SERVICE=visit API=createVisit SOURCE=karate mise run test
+ORG=orgB SERVICE=support API=createTicket SOURCE=karate mise run test
+ORG=orgB SERVICE=visit API=listSites SOURCE=cats mise run test
+ORG=orgB SERVICE=support API=listDevices SOURCE=cats mise run test
 ```
 
 `SOURCE` defaults to `all`. CATS defaults to full mode. Use `CATS_PROFILE=smoke` for the smoke OpenAPI contract:
 
 ```shell
 ORG=catsOrg SERVICE=booking API=listResources CATS_PROFILE=smoke SOURCE=cats mise run test
+ORG=orgB SERVICE=visit API=listSites CATS_PROFILE=smoke SOURCE=cats mise run test
 ```
+
+Karate와 CATS는 기본적으로 `catsOrg/booking`을 대상으로 동작합니다. 다른 기관/서비스를 실행할 때만 `ORG`와 `SERVICE`를 지정하면 됩니다.
+또한 CATS는 `ORG/SERVICE` 값에 맞는 gateway OpenAPI 파일을 자동 선택합니다.
 
 ## Report UI
 

@@ -26,9 +26,8 @@ class KarateRunner {
 
     private String buildTagFilter(String service, String api) {
         var parts = new ArrayList<String>();
-        if (service != null && !service.isBlank()) {
-            parts.add("@service=" + service);
-        }
+        String effectiveService = (service == null || service.isBlank()) ? "booking" : service;
+        parts.add("@service=" + effectiveService);
         if (api != null && !api.isBlank()) {
             parts.add("@api=" + api);
         }

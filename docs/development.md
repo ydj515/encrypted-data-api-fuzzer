@@ -70,6 +70,8 @@ Then run tests from the repository root:
 SOURCE=all mise run test
 ORG=catsOrg SERVICE=booking API=createReservation SOURCE=karate mise run test
 ORG=catsOrg SERVICE=booking API=listResources CATS_PROFILE=smoke SOURCE=cats mise run test
+ORG=orgA SERVICE=A API=createReservation SOURCE=karate mise run test
+ORG=orgB SERVICE=visit API=listSites SOURCE=cats mise run test
 ```
 
 ## Gradle Wrapper (fallback)

@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: orgB support Gateway API Contract
+  version: 1.0.0
+  description: |
+    orgB 기관의 support 서비스에 대한 Gateway 계약입니다.
+    CATS는 이 계약을 기준으로 Gateway(28080)를 호출하고, Gateway는 mock-rest-api-server(18080)로 프록시합니다.
+servers:
+  - url: http://localhost:28080
+    description: Gateway local server
+
+tags:
+  - name: Device
+    description: Gateway 경유 장비 조회 API
+  - name: Ticket
+    description: Gateway 경유 지원 티켓 생성/조회/해결 API
+
+paths:
+  /cats/{org}/{service}/listDevices:
+    post:
+      tags: [Device]
+      summary: 장비 목록 조회
+      operationId: listDevicesViaGateway
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceListRequest"
+            examples:
+              default:
+                value:
+                  page: 0
+                  size: 20
+                  status: ACTIVE
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /cats/{org}/{service}/createTicket:
+    post:
+      tags: [Ticket]
+      summary: 지원 티켓 생성
+      operationId: createTicketViaGateway
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportTicketCreateRequest"
+            examples:
+              default:
+                value:
+                  deviceId: DEV-01
+                  requesterId: ops-user
+                  issueType: DISPLAY_ERROR
+                  description: screen is blank
+      responses:
+        "201":
+          description: 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicketCreateResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /cats/{org}/{service}/getTicketDetail:
+    post:
+      tags: [Ticket]
+      summary: 지원 티켓 상세 조회
+      operationId: getTicketDetailViaGateway
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportTicketDetailRequest"
+            examples:
+              default:
+                value:
+                  ticketId: TCK-1700000000000
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicketDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /cats/{org}/{service}/resolveTicket:
+    post:
+      tags: [Ticket]
+      summary: 지원 티켓 해결 처리
+      operationId: resolveTicketViaGateway
+      parameters:
+        - $ref: "#/components/parameters/Org"
+        - $ref: "#/components/parameters/Service"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportResolveRequest"
+            examples:
+              default:
+                value:
+                  ticketId: TCK-1700000000000
+                  resolutionNote: restarted device
+      responses:
+        "200":
+          description: 해결 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportResolveResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+components:
+  parameters:
+    Org:
+      name: org
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [orgB]
+      example: orgB
+    Service:
+      name: service
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [support]
+      example: support
+
+  responses:
+    BadRequest:
+      description: 잘못된 요청
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: 라우트 또는 리소스를 찾을 수 없음
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServiceUnavailable:
+      description: 업스트림 서비스 연결 실패
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    DeviceListRequest:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          default: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+        status:
+          type: string
+
+    SupportTicketCreateRequest:
+      type: object
+      required: [deviceId, requesterId, issueType, description]
+      properties:
+        deviceId:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,100}$'
+        requesterId:
+          type: string
+        issueType:
+          type: string
+        description:
+          type: string
+
+    SupportTicketDetailRequest:
+      type: object
+      required: [ticketId]
+      properties:
+        ticketId:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,100}$'
+
+    SupportResolveRequest:
+      type: object
+      required: [ticketId, resolutionNote]
+      properties:
+        ticketId:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,100}$'
+        resolutionNote:
+          type: string
+          minLength: 1
+          maxLength: 500
+
+    DeviceListResponse:
+      type: object
+      required: [items, page, size, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeviceSummary"
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+          format: int64
+
+    DeviceSummary:
+      type: object
+      required: [deviceId, name, model, status]
+      properties:
+        deviceId:
+          type: string
+        name:
+          type: string
+        model:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, MAINTENANCE]
+
+    SupportTicketCreateResponse:
+      type: object
+      required: [ticketId, status, createdAt]
+      properties:
+        ticketId:
+          type: string
+        status:
+          type: string
+          enum: [OPEN]
+        createdAt:
+          type: string
+          format: date-time
+
+    SupportResolveResponse:
+      type: object
+      required: [ticketId, status, resolvedAt]
+      properties:
+        ticketId:
+          type: string
+        status:
+          type: string
+          enum: [RESOLVED]
+        resolvedAt:
+          type: string
+          format: date-time
+
+    SupportTicketDetailResponse:
+      type: object
+      required: [ticketId, deviceId, requesterId, issueType, description, status, createdAt]
+      properties:
+        ticketId:
+          type: string
+        deviceId:
+          type: string
+        requesterId:
+          type: string
+        issueType:
+          type: string
+        description:
+          type: string
+        resolutionNote:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [OPEN, RESOLVED]
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [code, message, traceId]
+      properties:
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: Request body is not valid JSON
+        traceId:
+          type: string
