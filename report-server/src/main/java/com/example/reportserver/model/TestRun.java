@@ -19,6 +19,7 @@ public class TestRun {
     private String service;
     private String api;
     private TestSource source;
+    private TestCaseGranularity caseGranularity;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startedAt;

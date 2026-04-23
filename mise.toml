@@ -25,6 +25,18 @@ set -e
 description = "Run Karate scenario tests (ORG/SERVICE/API env vars for scope)"
 run = "cd karate-tests && ./gradlew test"
 
+[tasks."karate:publish"]
+description = "Karate 리포트를 공유 저장소로 발행 (ORG/SERVICE/API/TEST_CASE_GRANULARITY 환경변수 승계)"
+run = "scripts/publish-karate-report.sh"
+
+[tasks."karate"]
+description = "Karate 실행 + 리포트 발행"
+run = """
+set -e
+mise run karate:run
+mise run karate:publish
+"""
+
 [tasks.test]
 description = "Test all modules sequentially (gateway → mock)"
 run = """

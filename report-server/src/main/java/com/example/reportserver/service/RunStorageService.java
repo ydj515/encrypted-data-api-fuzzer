@@ -4,8 +4,8 @@ import com.example.reportserver.model.TestCase;
 import com.example.reportserver.model.TestRun;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -17,20 +17,39 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RunStorageService {
 
-    @Value("${report.data-dir}")
-    private String dataDir;
+    private static final Pattern RUN_ID_PATTERN = Pattern.compile("(?=.*[A-Za-z0-9])[A-Za-z0-9._-]+");
 
+    private final Path dataDir;
     private final ObjectMapper objectMapper;
+
+    @Autowired
+    public RunStorageService(@Value("${report.data-dir}") String dataDir, ObjectMapper objectMapper) {
+        this(Path.of(dataDir), objectMapper);
+    }
+
+    public RunStorageService(Path dataDir, ObjectMapper objectMapper) {
+        this.dataDir = dataDir;
+        this.objectMapper = objectMapper;
+    }
 
     public void saveRun(TestRun run) {
         Path runDir = runDir(run.getId());
+        writeRun(runDir, run);
+    }
+
+    public void saveCases(String runId, List<TestCase> cases) {
+        Path runDir = runDir(runId);
+        writeCases(runDir, cases);
+    }
+
+    public void writeRun(Path runDir, TestRun run) {
         try {
             Files.createDirectories(runDir);
             objectMapper.writeValue(runDir.resolve("meta.json").toFile(), run);
@@ -39,8 +58,7 @@ public class RunStorageService {
         }
     }
 
-    public void saveCases(String runId, List<TestCase> cases) {
-        Path runDir = runDir(runId);
+    public void writeCases(Path runDir, List<TestCase> cases) {
         try {
             Files.createDirectories(runDir);
             objectMapper.writeValue(runDir.resolve("cases.json").toFile(), cases);
@@ -74,7 +92,7 @@ public class RunStorageService {
     }
 
     public List<TestRun> listAllRuns() {
-        Path base = Path.of(dataDir);
+        Path base = dataDir;
         if (!Files.isDirectory(base)) {
             return Collections.emptyList();
         }
@@ -100,7 +118,24 @@ public class RunStorageService {
         }
     }
 
-    private Path runDir(String runId) {
-        return Path.of(dataDir).resolve(Path.of(runId).getFileName().toString());
+    public Path baseDir() {
+        return dataDir;
+    }
+
+    public Path runDir(String runId) {
+        return dataDir.resolve(canonicalRunId(runId));
+    }
+
+    private String canonicalRunId(String runId) {
+        if (runId == null || runId.isBlank()) {
+            throw new IllegalArgumentException("Run ID is required");
+        }
+        String canonicalRunId = runId.trim();
+        if (!RUN_ID_PATTERN.matcher(canonicalRunId).matches()) {
+            throw new IllegalArgumentException(
+                    "Run ID may contain only letters, numbers, dots, underscores, and hyphens: " + runId
+            );
+        }
+        return canonicalRunId;
     }
 }
