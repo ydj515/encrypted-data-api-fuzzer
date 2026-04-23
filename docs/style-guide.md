@@ -1,4 +1,4 @@
-# 코드 스타일 & 리뷰 가이드 (encrypted-data-api-fuzzer)
+# 코드 스타일 & 리뷰 가이드 (api-test-orchestrator)
 
 ## 원칙
 - **가독성/일관성**: 팀원이 바로 읽고 유지보수할 수 있게 간단·일관된 패턴 유지.

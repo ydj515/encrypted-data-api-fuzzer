@@ -10,7 +10,7 @@ This repository contains two Spring Boot services that together form an encrypte
 ## Module Structure
 
 ```
-encrypted-data-api-fuzzer/
+api-test-orchestrator/
 ├── gateway/                             # Encrypted API proxy (port 8080)
 │   ├── src/main/java/com/example/gateway/
 │   │   ├── controller/                  # HTTP entry points

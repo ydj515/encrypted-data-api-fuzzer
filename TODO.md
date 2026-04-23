@@ -11,7 +11,7 @@
 ## 최종 모듈 구조
 
 ```
-encrypted-data-api-fuzzer/
+api-test-orchestrator/
 ├── gateway/                  # 기존
 ├── mock-rest-api-server/     # 기존
 ├── karate-tests/             # NEW

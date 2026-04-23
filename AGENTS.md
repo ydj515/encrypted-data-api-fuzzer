@@ -1,4 +1,4 @@
-# encrypted-data-api-fuzzer
+# api-test-orchestrator
 
 Two Spring Boot services for testing encrypted API proxy flows.
 

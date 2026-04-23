@@ -1,4 +1,26 @@
-### IntelliJ IDEA ###
-.idea
+### Java ###
+*.class
+bin/
 
-cats-report
+### OS ###
+.DS_Store
+Thumbs.db
+
+### IDE ###
+.idea/
+!.idea/runConfigurations/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+### 공통 ###
+*.log
+.env
+.env.*
+
+### agents file
+.claude/settings.local.json
+
+### 프로젝트 특화 ###
+cats-report/

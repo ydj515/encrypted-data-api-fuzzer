@@ -1,5 +1,5 @@
-# encrypted-data-api-fuzzer
-this repository is encrypted-data-api-fuzzer
+# api-test-orchestrator
+this repository is api-test-orchestrator
 
 
 ## CATS 리포트 보는 법
@@ -78,7 +78,7 @@ cd gateway
 - 기본값은 일반 모드입니다. `2xx/4xx/5xx`가 모두 리포트에 반영됩니다.
 
 ```bash
-/Users/dongjin/dev/study/encrypted-data-api-fuzzer/scripts/run-cats-gw-smoke.sh
+/Users/dongjin/dev/study/api-test-orchestrator/scripts/run-cats-gw-smoke.sh
 ```
 
 - blackbox 모드가 필요하면 명시적으로 켭니다.
@@ -159,12 +159,12 @@ BLACKBOX=true SKIP_IGNORED_REPORTING=true \
 
 ```bash
 ORG=testOrg SERVICE=testService \
-/Users/dongjin/dev/study/encrypted-data-api-fuzzer/scripts/run-cats-gw-smoke.sh
+/Users/dongjin/dev/study/api-test-orchestrator/scripts/run-cats-gw-smoke.sh
 ```
 
 ```bash
 DRY_RUN=true CATS_BIN=echo \
-/Users/dongjin/dev/study/encrypted-data-api-fuzzer/scripts/run-cats-gw-full.sh
+/Users/dongjin/dev/study/api-test-orchestrator/scripts/run-cats-gw-full.sh
 ```
 
 ### GW 응답 코드 기준
