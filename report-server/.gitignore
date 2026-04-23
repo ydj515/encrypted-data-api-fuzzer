@@ -10,6 +10,6 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### 모듈 특화 ###
-application.yml
-libs/
+### 런타임 데이터 ###
+data/runs/*
+!data/runs/.gitkeep
