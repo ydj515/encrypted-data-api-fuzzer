@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${service + ' 배치 이력 — API Test Report'}">배치 이력</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #1a1d23;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1d23;
+      color: #fff;
+      padding: 0 32px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    header a { color: #9ca3af; text-decoration: none; font-size: 0.875rem; transition: color 0.15s; }
+    header a:hover { color: #fff; }
+    header .sep { color: #4b5563; font-size: 0.875rem; }
+    header .current { font-size: 0.875rem; font-weight: 600; color: #fff; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #1a1d23;
+    }
+
+    /* 필터 패널 */
+    .filter-panel {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      margin-bottom: 24px;
+    }
+    .filter-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 16px;
+    }
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 5px; }
+    .filter-group label { font-size: 0.75rem; font-weight: 600; color: #6b7280; letter-spacing: 0.02em; }
+    .filter-group select,
+    .filter-group input[type="text"],
+    .filter-group input[type="datetime-local"] {
+      padding: 7px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #1a1d23;
+      background: #f9fafb;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+      width: 100%;
+    }
+    .filter-group select:focus,
+    .filter-group input:focus { border-color: #3b82f6; background: #fff; }
+
+    .filter-actions {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      padding-bottom: 1px;
+    }
+    .btn {
+      padding: 7px 18px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      display: inline-block;
+      line-height: 1.4;
+    }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-reset { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+    .btn-reset:hover { background: #e5e7eb; }
+
+    /* 테이블 */
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .run-count { font-size: 0.85rem; color: #6b7280; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+    thead tr { background: #f0f2f5; }
+    th, td { padding: 13px 18px; text-align: left; font-size: 0.875rem; }
+    th { font-weight: 600; color: #374151; white-space: nowrap; }
+    tbody tr { border-top: 1px solid #e5e7eb; }
+    tbody tr:hover { background: #f9fafb; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-pass { background: #dcfce7; color: #16a34a; }
+    .badge-fail { background: #fee2e2; color: #dc2626; }
+    .badge-karate { background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
+    .badge-cats { background: #fdf4ff; color: #9333ea; border: 1px solid #e9d5ff; }
+
+    .api-label {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #eff6ff;
+      color: #3b82f6;
+      border: 1px solid #bfdbfe;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+    .api-all { color: #9ca3af; font-size: 0.82rem; font-style: italic; }
+
+    .count-cell { white-space: nowrap; font-size: 0.85rem; }
+    .count-total { color: #374151; font-weight: 600; }
+    .count-pass { color: #16a34a; font-weight: 600; }
+    .count-fail { color: #dc2626; font-weight: 600; }
+    .count-sep { color: #d1d5db; margin: 0 3px; }
+
+    .run-time { font-size: 0.82rem; color: #4b5563; white-space: nowrap; }
+    .duration { font-size: 0.82rem; color: #6b7280; white-space: nowrap; }
+
+    .btn-sm {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn-detail { background: #3b82f6; color: #fff; }
+    .btn-detail:hover { background: #2563eb; }
+    .btn-report { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; margin-left: 4px; }
+    .btn-report:hover { background: #e5e7eb; }
+
+    .action-cell { white-space: nowrap; }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 0;
+      color: #6b7280;
+      font-size: 0.95rem;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a th:href="@{/}">API Test Report</a>
+  <span class="sep">/</span>
+  <span class="sep" th:text="${org}"></span>
+  <span class="sep">/</span>
+  <span class="current" th:text="${service}"></span>
+</header>
+
+<div class="container">
+  <div class="page-title" th:text="${org + ' / ' + service + ' 배치 이력'}"></div>
+
+  <!-- 필터 패널 -->
+  <div class="filter-panel">
+    <div class="filter-title">필터</div>
+    <form method="get" th:action="@{/services/{org}/{service}(org=${org},service=${service})}">
+      <div class="filter-grid">
+
+        <div class="filter-group">
+          <label>API</label>
+          <select name="api">
+            <option value="">전체</option>
+            <option th:each="a : ${availableApis}"
+                    th:value="${a}"
+                    th:text="${a}"
+                    th:selected="${filter.api != null and filter.api == a}"></option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>소스</label>
+          <select name="source">
+            <option value="">전체</option>
+            <option th:each="s : ${allSources}"
+                    th:value="${s.name()}"
+                    th:text="${s.name()}"
+                    th:selected="${filter.source != null and filter.source == s}"></option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>상태</label>
+          <select name="status">
+            <option value="">전체</option>
+            <option th:each="s : ${allStatuses}"
+                    th:value="${s.name()}"
+                    th:text="${s.name()}"
+                    th:selected="${filter.status != null and filter.status == s}"></option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>HTTP 상태 코드</label>
+          <select name="httpStatus">
+            <option value="">전체</option>
+            <option th:each="code : ${availableHttpStatuses}"
+                    th:value="${code}"
+                    th:text="${code}"
+                    th:selected="${filter.httpStatus != null and filter.httpStatus == code}"></option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>테스트 케이스 명</label>
+          <input type="text" name="caseName" placeholder="부분 일치" th:value="${filter.caseName}">
+        </div>
+
+        <div class="filter-group">
+          <label>엔드포인트</label>
+          <input type="text" name="endpoint" placeholder="부분 일치" th:value="${filter.endpoint}">
+        </div>
+
+        <div class="filter-group">
+          <label>시작 시각 (from)</label>
+          <input type="datetime-local" name="from" th:value="${fromStr}">
+        </div>
+
+        <div class="filter-group">
+          <label>종료 시각 (to)</label>
+          <input type="datetime-local" name="to" th:value="${toStr}">
+        </div>
+
+        <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">적용</button>
+          <a th:href="@{/services/{org}/{service}(org=${org},service=${service})}"
+             class="btn btn-reset">초기화</a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+  <!-- 결과 헤더 -->
+  <div class="result-header">
+    <span class="run-count" th:text="${runs.size() + '개 배치 실행'}"></span>
+  </div>
+
+  <!-- 빈 상태 -->
+  <div th:if="${#lists.isEmpty(runs)}" class="empty-state">
+    조건에 맞는 배치 실행 이력이 없습니다.
+  </div>
+
+  <!-- 배치 이력 테이블 -->
+  <table th:unless="${#lists.isEmpty(runs)}">
+    <thead>
+      <tr>
+        <th>수행 시각</th>
+        <th>소스</th>
+        <th>대상 API</th>
+        <th>전체 / 통과 / 실패</th>
+        <th>소요 시간</th>
+        <th>상태</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="run : ${runs}">
+        <td>
+          <span class="run-time"
+                th:if="${run.startedAt != null}"
+                th:text="${#temporals.format(run.startedAt, 'yyyy-MM-dd HH:mm:ss')}"></span>
+          <span class="run-time" th:unless="${run.startedAt != null}" style="color:#d1d5db;">-</span>
+        </td>
+        <td>
+          <span th:if="${run.source != null and run.source.name() == 'KARATE'}" class="badge badge-karate">KARATE</span>
+          <span th:if="${run.source != null and run.source.name() == 'CATS'}" class="badge badge-cats">CATS</span>
+        </td>
+        <td>
+          <span th:if="${run.api != null and !#strings.isEmpty(run.api)}"
+                class="api-label" th:text="${run.api}"></span>
+          <span th:unless="${run.api != null and !#strings.isEmpty(run.api)}"
+                class="api-all">전체</span>
+        </td>
+        <td>
+          <span class="count-cell">
+            <span class="count-total" th:text="${run.totalCount}"></span>
+            <span class="count-sep">/</span>
+            <span class="count-pass" th:text="${run.passCount}"></span>
+            <span class="count-sep">/</span>
+            <span class="count-fail" th:text="${run.failCount}"></span>
+          </span>
+        </td>
+        <td>
+          <span class="duration"
+                th:text="${#numbers.formatDecimal(run.durationMs / 1000.0, 1, 1) + 's'}"></span>
+        </td>
+        <td>
+          <span th:if="${run.failCount == 0}" class="badge badge-pass">PASS</span>
+          <span th:unless="${run.failCount == 0}" class="badge badge-fail">FAIL</span>
+        </td>
+        <td class="action-cell">
+          <a th:href="@{/runs/{runId}(runId=${run.id})}" class="btn-sm btn-detail">상세</a>
+          <a th:if="${run.reportPath != null and !#strings.isEmpty(run.reportPath)}"
+             th:href="${run.reportPath}"
+             target="_blank"
+             class="btn-sm btn-report">리포트</a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

@@ -1,8 +1,6 @@
 package com.example.reportserver.cli;
 
-import com.example.reportserver.model.TestCaseGranularity;
-import com.example.reportserver.parser.KarateCaseParser;
-import com.example.reportserver.parser.KarateReportParser;
+import com.example.reportserver.parser.CatsReportParser;
 import com.example.reportserver.service.RunPublishService;
 import com.example.reportserver.service.RunStorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,19 +11,19 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class KaratePublishCli {
+public final class CatsPublishCli {
 
-    public static final String COMMAND = "publish-karate";
+    public static final String COMMAND = "publish-cats";
 
-    private static final String DEFAULT_REPORT_DIR = "../karate-tests/build/karate-reports/karate-reports";
+    private static final String DEFAULT_REPORT_DIR = "../cats-report";
     private static final String DEFAULT_DATA_DIR = "data/runs";
 
-    private KaratePublishCli() {
+    private CatsPublishCli() {
     }
 
     public static void main(String[] args) {
         Map<String, String> options = parseOptions(args);
-        Path reportDir = Path.of(value(options, "report-dir", "KARATE_REPORT_DIR", DEFAULT_REPORT_DIR))
+        Path reportDir = Path.of(value(options, "report-dir", "CATS_REPORT_DIR", DEFAULT_REPORT_DIR))
                 .toAbsolutePath()
                 .normalize();
         Path dataDir = Path.of(value(options, "data-dir", "REPORT_DATA_DIR", DEFAULT_DATA_DIR))
@@ -35,26 +33,19 @@ public final class KaratePublishCli {
         String service = requiredValue(options, "service", "SERVICE");
         String api = blankToNull(value(options, "api", "API", null));
         String runId = blankToNull(value(options, "run-id", "RUN_ID", null));
-        String granularityValue = value(options, "case-granularity", "TEST_CASE_GRANULARITY", null);
-        if (granularityValue == null || granularityValue.isBlank()) {
-            granularityValue = System.getenv("CASE_GRANULARITY");
-        }
-        TestCaseGranularity granularity = TestCaseGranularity.from(granularityValue);
 
         ObjectMapper objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        RunPublishService publishService = RunPublishService.forKarate(
-                new KarateReportParser(objectMapper),
-                new KarateCaseParser(objectMapper),
+        RunPublishService publishService = RunPublishService.forCats(
+                new CatsReportParser(objectMapper),
                 new RunStorageService(dataDir, objectMapper)
         );
 
-        String publishedRunId = publishService.publishKarate(runId, reportDir, org, service, api, granularity);
+        String publishedRunId = publishService.publishCats(runId, reportDir, org, service, api);
 
-        System.out.println("Karate 리포트 발행 완료: " + publishedRunId);
+        System.out.println("CATS 리포트 발행 완료: " + publishedRunId);
         System.out.println("저장 위치: " + dataDir.resolve(publishedRunId));
-        System.out.println("케이스 단위: " + granularity);
     }
 
     private static Map<String, String> parseOptions(String[] args) {

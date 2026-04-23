@@ -1,5 +1,6 @@
 package com.example.reportserver.controller;
 
+import com.example.reportserver.controller.dto.CatsPublishRequest;
 import com.example.reportserver.controller.dto.KaratePublishRequest;
 import com.example.reportserver.model.TestCaseGranularity;
 import com.example.reportserver.service.RunPublishService;
@@ -28,6 +29,18 @@ public class PublishController {
                 request.getService(),
                 request.getApi(),
                 TestCaseGranularity.from(request.getCaseGranularity())
+        );
+        return ResponseEntity.ok(runId);
+    }
+
+    @PostMapping("/cats")
+    public ResponseEntity<String> publishCats(@RequestBody CatsPublishRequest request) {
+        String runId = runPublishService.publishCats(
+                request.getRunId(),
+                Path.of(request.getReportDir()),
+                request.getOrg(),
+                request.getService(),
+                request.getApi()
         );
         return ResponseEntity.ok(runId);
     }

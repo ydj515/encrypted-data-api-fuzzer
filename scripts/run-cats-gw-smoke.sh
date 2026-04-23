@@ -6,6 +6,7 @@ CONTRACT_PATH="${CONTRACT_PATH:-$ROOT_DIR/docs/openapi/cats-gw-smoke-openapi.yam
 SERVER_URL="${SERVER_URL:-http://localhost:28080}"
 ORG="${ORG:-catsOrg}"
 SERVICE="${SERVICE:-booking}"
+API="${API:-}"
 CATS_BIN="${CATS_BIN:-cats}"
 DRY_RUN="${DRY_RUN:-false}"
 BLACKBOX="${BLACKBOX:-false}"
@@ -21,6 +22,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   SERVER_URL     Gateway 서버 URL (기본: http://localhost:28080)
   ORG            path 변수 org 값 (기본: catsOrg)
   SERVICE        path 변수 service 값 (기본: booking)
+  API            실행 대상 API 이름 (미지정 시 전체, 예: createReservation)
   CATS_BIN       cats 실행 파일 경로/이름 (기본: cats)
   DRY_RUN        true면 실행하지 않고 명령만 출력
   BLACKBOX       true면 5xx만 에러로 보는 blackbox 모드 사용 (기본: false)
@@ -47,6 +49,10 @@ cmd=(
   -P "org=$ORG"
   -P "service=$SERVICE"
 )
+
+if [[ -n "$API" ]]; then
+  cmd+=(--path "/cats/{org}/{service}/$API")
+fi
 
 if [[ "$BLACKBOX" == "true" ]]; then
   cmd+=(-b)

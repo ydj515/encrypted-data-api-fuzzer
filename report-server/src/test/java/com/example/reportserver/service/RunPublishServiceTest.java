@@ -2,6 +2,8 @@ package com.example.reportserver.service;
 
 import com.example.reportserver.model.TestCaseGranularity;
 import com.example.reportserver.model.TestRun;
+import com.example.reportserver.model.TestSource;
+import com.example.reportserver.parser.CatsReportParser;
 import com.example.reportserver.parser.KarateCaseParser;
 import com.example.reportserver.parser.KarateReportParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +34,7 @@ class RunPublishServiceTest {
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         RunStorageService storageService = new RunStorageService(dataDir, objectMapper);
-        RunPublishService publishService = new RunPublishService(
+        RunPublishService publishService = RunPublishService.forKarate(
                 new KarateReportParser(objectMapper),
                 new KarateCaseParser(objectMapper),
                 storageService
@@ -62,6 +64,46 @@ class RunPublishServiceTest {
     }
 
     @Test
+    void publishCatsWritesCompleteRunDirectory() throws Exception {
+        Path sourceReportDir = tempDir.resolve("cats-report");
+        Path dataDir = tempDir.resolve("runs");
+        writeCatsReport(sourceReportDir);
+
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        RunStorageService storageService = new RunStorageService(dataDir, objectMapper);
+        RunPublishService publishService = RunPublishService.forCats(
+                new CatsReportParser(objectMapper),
+                storageService
+        );
+
+        String runId = publishService.publishCats(
+                "cats-test-run",
+                sourceReportDir,
+                "catsOrg",
+                "booking",
+                null
+        );
+
+        Path runDir = dataDir.resolve(runId);
+        assertThat(Files.exists(runDir.resolve("meta.json"))).isTrue();
+        assertThat(Files.exists(runDir.resolve("cases.json"))).isTrue();
+        assertThat(Files.exists(runDir.resolve("report/index.html"))).isTrue();
+
+        TestRun run = storageService.findRun(runId).orElseThrow();
+        assertThat(run.getSource()).isEqualTo(TestSource.CATS);
+        assertThat(run.getTotalCount()).isEqualTo(1);
+        assertThat(run.getPassCount()).isEqualTo(1);
+        assertThat(run.getReportPath()).isEqualTo("/reports/cats-test-run/report/index.html");
+        assertThat(storageService.findCases(runId))
+                .hasSize(1)
+                .first()
+                .extracting("api", "endpoint", "httpMethod")
+                .containsExactly("listResources", "/cats/catsOrg/booking/listResources", "POST");
+    }
+
+    @Test
     void rejectRunIdWithPathSegments() throws Exception {
         Path sourceReportDir = tempDir.resolve("karate-report");
         writeReport(sourceReportDir);
@@ -69,7 +111,7 @@ class RunPublishServiceTest {
         ObjectMapper objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        RunPublishService publishService = new RunPublishService(
+        RunPublishService publishService = RunPublishService.forKarate(
                 new KarateReportParser(objectMapper),
                 new KarateCaseParser(objectMapper),
                 new RunStorageService(tempDir.resolve("runs"), objectMapper)
@@ -114,6 +156,34 @@ class RunPublishServiceTest {
                       ]
                     }
                   ]
+                }
+                """);
+    }
+
+    private void writeCatsReport(Path reportDir) throws Exception {
+        Files.createDirectories(reportDir);
+        Files.writeString(reportDir.resolve("index.html"), "<html></html>");
+        Files.writeString(reportDir.resolve("cats-summary-report.json"), """
+                {
+                  "testCases": [
+                    {
+                      "id": "Test 1",
+                      "scenario": "happy flow",
+                      "result": "success",
+                      "path": "/cats/{org}/{service}/listResources",
+                      "fuzzer": "HappyPath",
+                      "httpMethod": "post",
+                      "httpResponseCode": 200,
+                      "timeToExecuteInMs": "12"
+                    }
+                  ]
+                }
+                """);
+        Files.writeString(reportDir.resolve("Test1.json"), """
+                {
+                  "request": {
+                    "timestamp": "Mon, 2 Mar 2026 16:27:16 +0900"
+                  }
                 }
                 """);
     }

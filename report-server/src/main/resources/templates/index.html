@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Test Report</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #1a1d23;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1d23;
+      color: #fff;
+      padding: 0 32px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 1rem; font-weight: 600; letter-spacing: 0.02em; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #1a1d23;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 0;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+
+    thead tr { background: #f0f2f5; }
+
+    th, td {
+      padding: 13px 18px;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    th {
+      font-weight: 600;
+      color: #374151;
+      white-space: nowrap;
+    }
+
+    tbody tr { border-top: 1px solid #e5e7eb; }
+    tbody tr:hover { background: #f9fafb; }
+
+    .service-name { font-weight: 600; color: #1a1d23; }
+    .org-label {
+      display: inline-block;
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-right: 6px;
+    }
+
+    .api-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 22px;
+      padding: 0 8px;
+      background: #e5e7eb;
+      border-radius: 11px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-pass { background: #dcfce7; color: #16a34a; }
+    .badge-fail { background: #fee2e2; color: #dc2626; }
+    .badge-none { background: #f3f4f6; color: #9ca3af; }
+
+    .last-run { font-size: 0.82rem; color: #4b5563; white-space: nowrap; }
+
+    .btn-detail {
+      display: inline-block;
+      padding: 5px 14px;
+      background: #3b82f6;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .btn-detail:hover { background: #2563eb; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>API Test Report</h1>
+</header>
+
+<div class="container">
+  <div class="page-title">서비스 목록</div>
+
+  <div th:if="${#lists.isEmpty(services)}" class="empty-state">
+    등록된 테스트 실행 이력이 없습니다.
+  </div>
+
+  <table th:unless="${#lists.isEmpty(services)}">
+    <thead>
+      <tr>
+        <th>서비스명</th>
+        <th>API 수</th>
+        <th>마지막 수행</th>
+        <th>상태</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="svc : ${services}">
+        <td>
+          <span class="org-label" th:text="${svc.org}"></span>
+          <span class="service-name" th:text="${svc.service}"></span>
+        </td>
+        <td>
+          <span class="api-count" th:text="${svc.apiCount}">0</span>
+        </td>
+        <td>
+          <span class="last-run"
+                th:if="${svc.lastRunAt != null}"
+                th:text="${#temporals.format(svc.lastRunAt, 'yyyy-MM-dd HH:mm:ss')}">
+          </span>
+          <span th:unless="${svc.lastRunAt != null}" class="last-run" style="color:#d1d5db;">-</span>
+        </td>
+        <td>
+          <span th:if="${svc.lastStatus == null}" class="badge badge-none">-</span>
+          <span th:if="${svc.lastStatus != null and svc.lastStatus.name() == 'PASS'}"
+                class="badge badge-pass">PASS</span>
+          <span th:if="${svc.lastStatus != null and svc.lastStatus.name() == 'FAIL'}"
+                class="badge badge-fail">FAIL</span>
+        </td>
+        <td>
+          <a th:href="@{/services/{org}/{service}(org=${svc.org}, service=${svc.service})}"
+             class="btn-detail">상세 보기</a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

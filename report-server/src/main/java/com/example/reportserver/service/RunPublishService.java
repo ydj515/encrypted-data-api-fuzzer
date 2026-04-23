@@ -3,6 +3,8 @@ package com.example.reportserver.service;
 import com.example.reportserver.model.TestCase;
 import com.example.reportserver.model.TestCaseGranularity;
 import com.example.reportserver.model.TestRun;
+import com.example.reportserver.model.TestSource;
+import com.example.reportserver.parser.CatsReportParser;
 import com.example.reportserver.parser.KarateCaseParser;
 import com.example.reportserver.parser.KarateReportParser;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class RunPublishService {
 
     private final KarateReportParser karateReportParser;
     private final KarateCaseParser karateCaseParser;
+    private final CatsReportParser catsReportParser;
     private final RunStorageService runStorageService;
 
     public String publishKarate(
@@ -85,16 +88,79 @@ public class RunPublishService {
         }
     }
 
-    private String generateRunId() {
-        return "karate-" + LocalDateTime.now().format(RUN_ID_FORMATTER) + "-" + UUID.randomUUID().toString().substring(0, 8);
+    public String publishCats(
+            String runId,
+            Path reportDir,
+            String org,
+            String service,
+            String api
+    ) {
+        String effectiveRunId = canonicalRunId(runId, TestSource.CATS);
+        Path finalRunDir = runStorageService.runDir(effectiveRunId);
+        Path tempRunDir = runStorageService.baseDir()
+                .resolve("." + effectiveRunId + ".tmp-" + UUID.randomUUID());
+        Path stagedReportDir = tempRunDir.resolve("report");
+
+        try {
+            if (!Files.isDirectory(reportDir)) {
+                throw new IllegalArgumentException("CATS 리포트 디렉토리가 없습니다: " + reportDir);
+            }
+            if (Files.exists(finalRunDir)) {
+                throw new IllegalStateException("Run이 이미 존재합니다: " + effectiveRunId);
+            }
+
+            Files.createDirectories(runStorageService.baseDir());
+            copyDirectory(reportDir, stagedReportDir);
+
+            TestRun run = catsReportParser.parseRun(stagedReportDir, effectiveRunId, org, service, api);
+            List<TestCase> cases = catsReportParser.parseCases(stagedReportDir, effectiveRunId, org, service);
+
+            runStorageService.writeRun(tempRunDir, run);
+            runStorageService.writeCases(tempRunDir, cases);
+            movePublishedRun(tempRunDir, finalRunDir);
+
+            return effectiveRunId;
+        } catch (IOException e) {
+            deleteDirectoryIfExists(tempRunDir);
+            throw new UncheckedIOException(e);
+        } catch (RuntimeException e) {
+            deleteDirectoryIfExists(tempRunDir);
+            throw e;
+        }
     }
 
-    private String canonicalRunId(String runId) {
-        String effectiveRunId = runId == null || runId.isBlank() ? generateRunId() : runId.trim();
+    // CLI에서 Spring IoC 없이 Karate 전용 인스턴스 생성
+    public static RunPublishService forKarate(
+            KarateReportParser karateReportParser,
+            KarateCaseParser karateCaseParser,
+            RunStorageService runStorageService
+    ) {
+        return new RunPublishService(karateReportParser, karateCaseParser, null, runStorageService);
+    }
+
+    // CLI에서 Spring IoC 없이 CATS 전용 인스턴스 생성
+    public static RunPublishService forCats(
+            CatsReportParser catsReportParser,
+            RunStorageService runStorageService
+    ) {
+        return new RunPublishService(null, null, catsReportParser, runStorageService);
+    }
+
+    private String generateRunId(TestSource source) {
+        String prefix = source == TestSource.CATS ? "cats" : "karate";
+        return prefix + "-" + LocalDateTime.now().format(RUN_ID_FORMATTER) + "-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private String canonicalRunId(String runId, TestSource source) {
+        String effectiveRunId = runId == null || runId.isBlank() ? generateRunId(source) : runId.trim();
         if (!RUN_ID_PATTERN.matcher(effectiveRunId).matches()) {
             throw new IllegalArgumentException("Run ID may contain only letters, numbers, dots, underscores, and hyphens: " + runId);
         }
         return effectiveRunId;
+    }
+
+    private String canonicalRunId(String runId) {
+        return canonicalRunId(runId, TestSource.KARATE);
     }
 
     private void copyDirectory(Path sourceDir, Path targetDir) throws IOException {
