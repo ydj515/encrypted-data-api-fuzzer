@@ -40,3 +40,10 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+tasks.register<JavaExec>("publishKarate") {
+    group = "reporting"
+    description = "Publish Karate reports into REPORT_DATA_DIR without starting the web server"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.example.reportserver.cli.KaratePublishCli")
+}

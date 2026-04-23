@@ -13,8 +13,11 @@ public class TestCase {
 
     private String id;
     private String runId;
+    private TestCaseType caseType;
     private String api;
     private String name;
+    private String scenarioName;
+    private int sequence;
     private String endpoint;
     private String httpMethod;
     private int httpStatus;
