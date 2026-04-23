@@ -15,7 +15,10 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String location = Path.of(dataDir).toUri().toString();
+        String location = Path.of(dataDir).toAbsolutePath().toUri().toString();
+        if (!location.endsWith("/")) {
+            location += "/";
+        }
         registry.addResourceHandler("/reports/**")
                 .addResourceLocations(location);
     }

@@ -5,6 +5,7 @@ import com.example.reportserver.model.TestRun;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +17,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RunStorageService {
@@ -72,7 +75,7 @@ public class RunStorageService {
 
     public List<TestRun> listAllRuns() {
         Path base = Path.of(dataDir);
-        if (!Files.exists(base)) {
+        if (!Files.isDirectory(base)) {
             return Collections.emptyList();
         }
         try (var stream = Files.list(base)) {
@@ -80,23 +83,24 @@ public class RunStorageService {
                     .filter(Files::isDirectory)
                     .map(dir -> dir.resolve("meta.json"))
                     .filter(Files::exists)
-                    .map(this::readMeta)
-                    .sorted(Comparator.comparing(TestRun::getStartedAt).reversed())
+                    .flatMap(this::readMeta)
+                    .sorted(Comparator.comparing(TestRun::getStartedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                     .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    private TestRun readMeta(Path metaFile) {
+    private Stream<TestRun> readMeta(Path metaFile) {
         try {
-            return objectMapper.readValue(metaFile.toFile(), TestRun.class);
+            return Stream.of(objectMapper.readValue(metaFile.toFile(), TestRun.class));
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            log.warn("meta.json 파싱 실패, 스킵: {}", metaFile, e);
+            return Stream.empty();
         }
     }
 
     private Path runDir(String runId) {
-        return Path.of(dataDir, runId);
+        return Path.of(dataDir).resolve(Path.of(runId).getFileName().toString());
     }
 }
