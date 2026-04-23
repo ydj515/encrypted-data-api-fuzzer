@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: report-server
+
+server:
+  port: 48080
+
+report:
+  data-dir: ${REPORT_DATA_DIR:${user.dir}/data/runs}
