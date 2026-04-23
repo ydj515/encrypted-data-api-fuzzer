@@ -2,6 +2,7 @@ package com.example.reportserver.service;
 
 import com.example.reportserver.model.TestCase;
 import com.example.reportserver.model.TestRun;
+import com.example.reportserver.model.TestSource;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -73,7 +74,7 @@ public class RunStorageService {
             return Optional.empty();
         }
         try {
-            return Optional.of(objectMapper.readValue(meta.toFile(), TestRun.class));
+            return Optional.of(normalizeReportPath(objectMapper.readValue(meta.toFile(), TestRun.class)));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -111,11 +112,39 @@ public class RunStorageService {
 
     private Stream<TestRun> readMeta(Path metaFile) {
         try {
-            return Stream.of(objectMapper.readValue(metaFile.toFile(), TestRun.class));
+            return Stream.of(normalizeReportPath(objectMapper.readValue(metaFile.toFile(), TestRun.class)));
         } catch (IOException e) {
             log.warn("meta.json 파싱 실패, 스킵: {}", metaFile, e);
             return Stream.empty();
         }
+    }
+
+    private TestRun normalizeReportPath(TestRun run) {
+        if (run == null || run.getId() == null || run.getSource() == null) {
+            return run;
+        }
+
+        String expectedPath = defaultReportPath(run);
+        if (expectedPath == null) {
+            return run;
+        }
+
+        String reportPath = run.getReportPath();
+        String legacyPath = "/reports/" + run.getId();
+        if (reportPath == null || reportPath.isBlank() || legacyPath.equals(reportPath)) {
+            run.setReportPath(expectedPath);
+        }
+        return run;
+    }
+
+    private String defaultReportPath(TestRun run) {
+        if (run.getSource() == TestSource.KARATE) {
+            return "/reports/" + run.getId() + "/report/karate-summary.html";
+        }
+        if (run.getSource() == TestSource.CATS) {
+            return "/reports/" + run.getId() + "/report/index.html";
+        }
+        return null;
     }
 
     public Path baseDir() {

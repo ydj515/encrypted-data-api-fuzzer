@@ -36,6 +36,8 @@ Two Spring Boot services for testing encrypted API proxy flows.
 mise install           # install Java 21.0.2 (run once per machine)
 mise run gateway:run   # start gateway service
 mise run mock:run      # start mock server
-mise run test          # run all tests sequentially
+mise run report:run    # start report server
+mise run unit:test     # run module unit tests sequentially
+SOURCE=all mise run test  # run Karate + CATS and publish reports
 mise run build         # build all modules
 ```

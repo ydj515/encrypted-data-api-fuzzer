@@ -1,6 +1,36 @@
 # api-test-orchestrator
 this repository is api-test-orchestrator
 
+## 통합 테스트와 레포트
+
+mock, gateway, report-server를 각각 실행한 뒤 루트에서 통합 테스트를 실행합니다.
+
+```bash
+mise run mock:run
+mise run gateway:run
+mise run report:run
+```
+
+```bash
+# Karate + CATS 실행 후 레포트 발행
+SOURCE=all mise run test
+
+# Karate만 실행
+SOURCE=karate mise run test
+
+# CATS만 실행
+SOURCE=cats mise run test
+
+# 특정 API만 실행
+ORG=catsOrg SERVICE=booking API=createReservation SOURCE=karate mise run test
+```
+
+레포트 UI는 아래 주소에서 확인합니다.
+
+```text
+http://localhost:48080/
+```
+
 
 ## CATS 리포트 보는 법
 
@@ -155,11 +185,16 @@ BLACKBOX=true SKIP_IGNORED_REPORTING=true \
 ```
 
 ### 환경변수 오버라이드
-- 공통 환경변수: `CONTRACT_PATH`, `SERVER_URL`, `ORG`, `SERVICE`, `CATS_BIN`, `DRY_RUN`, `BLACKBOX`, `SKIP_IGNORED_REPORTING`
+- 공통 환경변수: `CONTRACT_PATH`, `SERVER_URL`, `ORG`, `SERVICE`, `API`, `CATS_BIN`, `DRY_RUN`, `BLACKBOX`, `SKIP_IGNORED_REPORTING`
+- 통합 실행 환경변수: `SOURCE=karate|cats|all`, `CATS_PROFILE=full|smoke`
 
 ```bash
 ORG=testOrg SERVICE=testService \
 /Users/dongjin/dev/study/api-test-orchestrator/scripts/run-cats-gw-smoke.sh
+```
+
+```bash
+API=listResources CATS_PROFILE=smoke SOURCE=cats mise run test
 ```
 
 ```bash

@@ -123,8 +123,6 @@ class GatewayProxyServiceTest {
                 "/resources/{resourceId}/inventory", "key", null, null, null
         );
         when(routeResolver.resolve("o", "s", "inventory", "POST")).thenReturn(templateRoute);
-        when(cryptoModule.encrypt("key", "{\"foo\":\"bar\"}")).thenReturn("encrypted");
-        when(checksumModule.checksum("encrypted")).thenReturn("chk");
 
         assertThatThrownBy(() -> gatewayProxyService.proxyPost("o", "s", "inventory", "{\"foo\":\"bar\"}"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -139,8 +137,6 @@ class GatewayProxyServiceTest {
                 "/resources/{resourceId}/inventory", "key", null, null, null
         );
         when(routeResolver.resolve("o", "s", "inventory", "POST")).thenReturn(templateRoute);
-        when(cryptoModule.encrypt("key", "{\"resourceId\":\"; ls -la\",\"date\":\"2026-03-02\"}")).thenReturn("encrypted");
-        when(checksumModule.checksum("encrypted")).thenReturn("chk");
 
         assertThatThrownBy(() -> gatewayProxyService.proxyPost("o", "s", "inventory", "{\"resourceId\":\"; ls -la\",\"date\":\"2026-03-02\"}"))
                 .isInstanceOf(IllegalArgumentException.class)

@@ -24,13 +24,18 @@ If mise is not available, ensure Java 21 is on `PATH` and use the Gradle wrapper
 
 | Command | Description |
 |---|---|
-| `mise run gateway:run` | Start gateway service (port 8080) |
+| `mise run gateway:run` | Start gateway service (port 28080) |
 | `mise run mock:run` | Start mock-rest-api-server (port 18080) |
-| `mise run build` | Build all modules sequentially (gateway → mock) |
-| `mise run test` | Run all tests sequentially |
+| `mise run report:run` | Start report-server (port 48080) |
+| `mise run build` | Build application modules sequentially |
+| `mise run unit:test` | Run gateway/mock/report-server unit tests sequentially |
+| `SOURCE=all mise run test` | Run Karate + CATS and publish reports |
+| `SOURCE=karate mise run test` | Run Karate and publish reports |
+| `SOURCE=cats mise run test` | Run CATS and publish reports |
 | `mise run clean` | Clean all modules |
 
-Build and test tasks use `set -e` — failure in gateway stops the run before mock is processed.
+Build and unit test tasks use `set -e` — failure in an earlier module stops the remaining modules.
+The E2E `test` task attempts to publish a report after each selected tool runs, then returns the original test failure if one occurred.
 
 ### From a module directory
 
@@ -46,7 +51,7 @@ Same commands apply inside `mock-rest-api-server/`.
 
 ## Running Both Services Together
 
-Gateway and mock server must both be running for end-to-end tests. Open two terminals:
+Gateway and mock server must both be running for end-to-end tests. The report server is needed to browse published history. Open three terminals:
 
 ```shell
 # terminal 1
@@ -54,6 +59,17 @@ mise run mock:run
 
 # terminal 2
 mise run gateway:run
+
+# terminal 3
+mise run report:run
+```
+
+Then run tests from the repository root:
+
+```shell
+SOURCE=all mise run test
+ORG=catsOrg SERVICE=booking API=createReservation SOURCE=karate mise run test
+ORG=catsOrg SERVICE=booking API=listResources CATS_PROFILE=smoke SOURCE=cats mise run test
 ```
 
 ## Gradle Wrapper (fallback)

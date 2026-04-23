@@ -14,16 +14,17 @@ run = "cd mock-rest-api-server && ./gradlew bootRun"
 # --- Aggregate tasks (sequential) ---
 
 [tasks.build]
-description = "Build all modules sequentially (gateway → mock)"
+description = "Build application modules sequentially"
 run = """
 set -e
 (cd gateway && ./gradlew build)
 (cd mock-rest-api-server && ./gradlew build)
+(cd report-server && ./gradlew build)
 """
 
 [tasks."karate:run"]
-description = "Run Karate scenario tests (ORG/SERVICE/API env vars for scope)"
-run = "cd karate-tests && ./gradlew test"
+description = "Karate 시나리오 실행 (ORG/SERVICE/API 환경변수로 범위 제한)"
+run = "scripts/run-karate.sh"
 
 [tasks."karate:publish"]
 description = "Karate 리포트를 공유 저장소로 발행 (ORG/SERVICE/API/TEST_CASE_GRANULARITY 환경변수 승계)"
@@ -31,23 +32,24 @@ run = "scripts/publish-karate-report.sh"
 
 [tasks."karate"]
 description = "Karate 실행 + 리포트 발행"
-run = """
-set -e
-mise run karate:run
-mise run karate:publish
-"""
+run = "SOURCE=karate scripts/run-tests.sh"
 
 [tasks.test]
-description = "Test all modules sequentially (gateway → mock)"
+description = "통합 테스트 실행 (SOURCE=karate|cats|all, ORG/SERVICE/API로 범위 제한)"
+run = "scripts/run-tests.sh"
+
+[tasks."unit:test"]
+description = "모듈 단위 테스트 실행 (gateway → mock → report-server)"
 run = """
 set -e
 (cd gateway && ./gradlew test)
 (cd mock-rest-api-server && ./gradlew test)
+(cd report-server && ./gradlew test)
 """
 
 [tasks."cats:run"]
-description = "CATS 퍼징 실행 (ORG/SERVICE/API 환경변수로 범위 제한)"
-run = "scripts/run-cats-gw.sh"
+description = "CATS 퍼징 실행 (ORG/SERVICE/API 환경변수로 범위 제한, CATS_PROFILE=full|smoke)"
+run = "scripts/run-cats.sh"
 
 [tasks."cats:publish"]
 description = "CATS 리포트를 report-server 저장소로 발행 (ORG/SERVICE/API 환경변수 승계)"
@@ -55,11 +57,7 @@ run = "scripts/publish-cats-report.sh"
 
 [tasks."cats"]
 description = "CATS 실행 + 리포트 발행"
-run = """
-set -e
-mise run cats:run
-mise run cats:publish
-"""
+run = "SOURCE=cats scripts/run-tests.sh"
 
 [tasks."report:run"]
 description = "Start report-server (port 48080)"
@@ -71,4 +69,6 @@ run = """
 set -e
 (cd gateway && ./gradlew clean)
 (cd mock-rest-api-server && ./gradlew clean)
+(cd report-server && ./gradlew clean)
+(cd karate-tests && ./gradlew clean)
 """

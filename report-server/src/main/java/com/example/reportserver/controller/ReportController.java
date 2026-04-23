@@ -120,6 +120,16 @@ public class ReportController {
         return "detail";
     }
 
+    @GetMapping("/reports/{runId}")
+    public String rawReportRedirect(@PathVariable String runId) {
+        TestRun run = runQueryService.findRun(runId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Run not found: " + runId));
+        if (run.getReportPath() == null || run.getReportPath().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Report path not found: " + runId);
+        }
+        return "redirect:" + run.getReportPath();
+    }
+
     private List<Integer> availableHttpStatuses(String org, String service) {
         TreeSet<Integer> statuses = new TreeSet<>(COMMON_HTTP_STATUSES);
         statuses.addAll(runQueryService.findAvailableHttpStatuses(org, service));
