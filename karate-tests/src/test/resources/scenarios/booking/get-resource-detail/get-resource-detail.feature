@@ -38,3 +38,15 @@ Feature: 자원 상세 조회
     And request { resourceId: 'R-999' }
     When method POST
     Then status 404
+    And match response.code == '#string'
+    And match response.message == '#string'
+    And match response.traceId == '#string'
+
+  Scenario: resourceId 미전달 시 400 반환
+    Given path basePath + '/getResourceDetail'
+    And request {}
+    When method POST
+    Then status 400
+    And match response.code == '#string'
+    And match response.message == '#string'
+    And match response.traceId == '#string'

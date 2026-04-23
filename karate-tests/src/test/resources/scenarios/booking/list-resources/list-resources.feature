@@ -22,6 +22,15 @@ Feature: 자원 목록 조회
     And match response.items == '#array'
     And match each response.items == { resourceId: '#string', name: '#string', category: '#string', active: '#boolean' }
 
+  Scenario: size 미전달 시 400 반환
+    Given path basePath + '/listResources'
+    And request { page: 0 }
+    When method POST
+    Then status 400
+    And match response.code == '#string'
+    And match response.message == '#string'
+    And match response.traceId == '#string'
+
   Scenario: 존재하지 않는 서비스 경로는 404 반환
     Given path '/cats/' + org + '/nonexistent/listResources'
     And request { page: 0, size: 20 }
