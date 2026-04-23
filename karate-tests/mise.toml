@@ -1,0 +1,10 @@
+[tools]
+java = "21.0.2"
+
+[tasks.run]
+description = "Run Karate scenario tests (ORG/SERVICE/API env vars for scope)"
+run = "./gradlew test"
+
+[tasks.clean]
+description = "Clean build artifacts"
+run = "./gradlew clean"
