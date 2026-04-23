@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 public class KarateCaseParser {
 
     private static final Pattern HTTP_REQUEST_PATTERN =
-            Pattern.compile("\\d+ > ([A-Z]+) https?://[^/]+(/[^\\n\\s]*)");
+            Pattern.compile("\\d+ > ([A-Z]+) https?://[^/\\s]+(/[^\\n\\s]*)?");
     private static final Pattern HTTP_STATUS_PATTERN =
             Pattern.compile("\\d+ < (\\d{3})");
 
@@ -136,10 +136,20 @@ public class KarateCaseParser {
     private String extractApi(List<String> tags) {
         if (tags == null) return null;
         return tags.stream()
-                .filter(t -> t.startsWith("api=") || t.startsWith("@api="))
-                .map(t -> t.startsWith("@") ? t.substring(5) : t.substring(4))
+                .map(this::normalizeTag)
+                .map(tag -> tag.split("=", 2))
+                .filter(parts -> parts.length == 2 && "api".equals(parts[0]))
+                .map(parts -> parts[1])
+                .filter(api -> !api.isBlank())
                 .findFirst()
                 .orElse(null);
+    }
+
+    private String normalizeTag(String tag) {
+        if (tag == null) {
+            return "";
+        }
+        return tag.startsWith("@") ? tag.substring(1) : tag;
     }
 
     private List<HttpCall> extractHttpCalls(List<KarateFeatureResult.StepResult> stepResults) {
@@ -154,7 +164,7 @@ public class KarateCaseParser {
                 if (pendingCall != null) {
                     calls.add(pendingCall.toHttpCall());
                 }
-                pendingCall = new PendingCall(httpInfo, stepDuration(step));
+                pendingCall = new PendingCall(httpInfo);
                 pendingCall.addStep(step);
                 continue;
             }
@@ -178,7 +188,8 @@ public class KarateCaseParser {
         Matcher reqMatcher = HTTP_REQUEST_PATTERN.matcher(log);
         Matcher statusMatcher = HTTP_STATUS_PATTERN.matcher(log);
         if (reqMatcher.find() && statusMatcher.find()) {
-            return new HttpInfo(reqMatcher.group(1), reqMatcher.group(2), Integer.parseInt(statusMatcher.group(1)));
+            String endpoint = reqMatcher.group(2) == null ? "/" : reqMatcher.group(2);
+            return new HttpInfo(reqMatcher.group(1), endpoint, Integer.parseInt(statusMatcher.group(1)));
         }
         return null;
     }
@@ -240,12 +251,12 @@ public class KarateCaseParser {
         private boolean failed;
         private String failureMsg;
 
-        private PendingCall(HttpInfo info, double durationMillis) {
+        private PendingCall(HttpInfo info) {
             this.info = info;
-            this.durationMillis = durationMillis;
         }
 
         private void addStep(KarateFeatureResult.StepResult step) {
+            durationMillis += stepDuration(step);
             if (isFailed(step)) {
                 failed = true;
                 if (failureMsg == null) {

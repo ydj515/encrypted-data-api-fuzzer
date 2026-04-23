@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RunPublishServiceTest {
 
@@ -58,6 +59,32 @@ class RunPublishServiceTest {
         assertThat(run.getReportPath()).isEqualTo("/reports/karate-test-run/report/karate-summary.html");
         assertThat(run.getCaseGranularity()).isEqualTo(TestCaseGranularity.BOTH);
         assertThat(storageService.findCases(runId)).hasSize(2);
+    }
+
+    @Test
+    void rejectRunIdWithPathSegments() throws Exception {
+        Path sourceReportDir = tempDir.resolve("karate-report");
+        writeReport(sourceReportDir);
+
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        RunPublishService publishService = new RunPublishService(
+                new KarateReportParser(objectMapper),
+                new KarateCaseParser(objectMapper),
+                new RunStorageService(tempDir.resolve("runs"), objectMapper)
+        );
+
+        assertThatThrownBy(() -> publishService.publishKarate(
+                "a/b",
+                sourceReportDir,
+                "catsOrg",
+                "booking",
+                null,
+                TestCaseGranularity.BOTH
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Run ID may contain only");
     }
 
     private void writeReport(Path reportDir) throws Exception {

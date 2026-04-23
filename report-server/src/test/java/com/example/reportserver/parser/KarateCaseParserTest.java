@@ -57,6 +57,20 @@ class KarateCaseParserTest {
         assertThat(cases)
                 .extracting(TestCase::getCaseType)
                 .containsOnly(TestCaseType.HTTP_CALL);
+        assertThat(cases.get(0).getDurationMs()).isEqualTo(11);
+        assertThat(cases.get(1).getDurationMs()).isEqualTo(9);
+    }
+
+    @Test
+    void parseHttpCallWithoutPathAsRootEndpoint() throws Exception {
+        writePathlessFeatureResult();
+
+        List<TestCase> cases = parser.parse(reportDir, "run-1", TestCaseGranularity.HTTP_CALL);
+
+        assertThat(cases).hasSize(1);
+        assertThat(cases.getFirst().getApi()).isEqualTo("rootHealth");
+        assertThat(cases.getFirst().getEndpoint()).isEqualTo("/");
+        assertThat(cases.getFirst().getHttpStatus()).isEqualTo(200);
     }
 
     private void writeFeatureResult() throws Exception {
@@ -82,6 +96,27 @@ class KarateCaseParserTest {
                         },
                         {
                           "result": {"millis": 1.0, "status": "passed"}
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
+    }
+
+    private void writePathlessFeatureResult() throws Exception {
+        Files.writeString(reportDir.resolve("scenarios.booking.root-health.karate-json.txt"), """
+                {
+                  "scenarioResults": [
+                    {
+                      "name": "root health",
+                      "durationMillis": 3.0,
+                      "failed": false,
+                      "tags": ["service=booking", "@api=rootHealth"],
+                      "stepResults": [
+                        {
+                          "result": {"millis": 3.0, "status": "passed"},
+                          "stepLog": "1 > GET http://localhost:28080\\n1 < 200\\n"
                         }
                       ]
                     }

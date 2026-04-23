@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Service
@@ -27,6 +28,7 @@ public class RunPublishService {
 
     private static final DateTimeFormatter RUN_ID_FORMATTER =
             DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS");
+    private static final Pattern RUN_ID_PATTERN = Pattern.compile("(?=.*[A-Za-z0-9])[A-Za-z0-9._-]+");
 
     private final KarateReportParser karateReportParser;
     private final KarateCaseParser karateCaseParser;
@@ -40,7 +42,7 @@ public class RunPublishService {
             String api,
             TestCaseGranularity caseGranularity
     ) {
-        String effectiveRunId = runId == null || runId.isBlank() ? generateRunId() : runId;
+        String effectiveRunId = canonicalRunId(runId);
         TestCaseGranularity effectiveGranularity =
                 caseGranularity == null ? TestCaseGranularity.BOTH : caseGranularity;
         Path finalRunDir = runStorageService.runDir(effectiveRunId);
@@ -85,6 +87,14 @@ public class RunPublishService {
 
     private String generateRunId() {
         return "karate-" + LocalDateTime.now().format(RUN_ID_FORMATTER) + "-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private String canonicalRunId(String runId) {
+        String effectiveRunId = runId == null || runId.isBlank() ? generateRunId() : runId.trim();
+        if (!RUN_ID_PATTERN.matcher(effectiveRunId).matches()) {
+            throw new IllegalArgumentException("Run ID may contain only letters, numbers, dots, underscores, and hyphens: " + runId);
+        }
+        return effectiveRunId;
     }
 
     private void copyDirectory(Path sourceDir, Path targetDir) throws IOException {

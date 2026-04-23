@@ -5,6 +5,7 @@ import com.example.reportserver.model.TestRun;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,15 +17,19 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Slf4j
 @Service
 public class RunStorageService {
 
+    private static final Pattern RUN_ID_PATTERN = Pattern.compile("(?=.*[A-Za-z0-9])[A-Za-z0-9._-]+");
+
     private final Path dataDir;
     private final ObjectMapper objectMapper;
 
+    @Autowired
     public RunStorageService(@Value("${report.data-dir}") String dataDir, ObjectMapper objectMapper) {
         this(Path.of(dataDir), objectMapper);
     }
@@ -118,6 +123,19 @@ public class RunStorageService {
     }
 
     public Path runDir(String runId) {
-        return dataDir.resolve(Path.of(runId).getFileName().toString());
+        return dataDir.resolve(canonicalRunId(runId));
+    }
+
+    private String canonicalRunId(String runId) {
+        if (runId == null || runId.isBlank()) {
+            throw new IllegalArgumentException("Run ID is required");
+        }
+        String canonicalRunId = runId.trim();
+        if (!RUN_ID_PATTERN.matcher(canonicalRunId).matches()) {
+            throw new IllegalArgumentException(
+                    "Run ID may contain only letters, numbers, dots, underscores, and hyphens: " + runId
+            );
+        }
+        return canonicalRunId;
     }
 }

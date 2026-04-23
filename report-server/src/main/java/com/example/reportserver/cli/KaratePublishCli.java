@@ -31,8 +31,8 @@ public final class KaratePublishCli {
         Path dataDir = Path.of(value(options, "data-dir", "REPORT_DATA_DIR", DEFAULT_DATA_DIR))
                 .toAbsolutePath()
                 .normalize();
-        String org = value(options, "org", "ORG", "catsOrg");
-        String service = value(options, "service", "SERVICE", "booking");
+        String org = requiredValue(options, "org", "ORG");
+        String service = requiredValue(options, "service", "SERVICE");
         String api = blankToNull(value(options, "api", "API", null));
         String runId = blankToNull(value(options, "run-id", "RUN_ID", null));
         String granularityValue = value(options, "case-granularity", "TEST_CASE_GRANULARITY", null);
@@ -87,6 +87,14 @@ public final class KaratePublishCli {
         }
         String envValue = System.getenv(envName);
         return envValue == null ? defaultValue : envValue;
+    }
+
+    private static String requiredValue(Map<String, String> options, String optionName, String envName) {
+        String value = value(options, optionName, envName, null);
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("--" + optionName + " or " + envName + " is required");
+        }
+        return value;
     }
 
     private static String blankToNull(String value) {

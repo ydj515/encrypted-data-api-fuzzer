@@ -13,6 +13,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Locale;
 
 @Component
@@ -57,10 +58,13 @@ public class KarateReportParser {
     }
 
     private LocalDateTime parseResultDate(String resultDate) {
+        if (resultDate == null || resultDate.isBlank()) {
+            throw new IllegalArgumentException("Karate summary resultDate is required");
+        }
         try {
             return LocalDateTime.parse(resultDate, RESULT_DATE_FORMATTER);
-        } catch (Exception e) {
-            return LocalDateTime.now();
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid Karate summary resultDate: " + resultDate, e);
         }
     }
 }
