@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public class ApiDtos {
+public class BookingDomainModels {
 
     public record ResourceSummary(String resourceId, String name, String category, boolean active) {
     }

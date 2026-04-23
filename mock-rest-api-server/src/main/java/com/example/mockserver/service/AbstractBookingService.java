@@ -1,9 +1,8 @@
 package com.example.mockserver.service;
 
-import com.example.mockserver.dto.ApiDtos;
+import com.example.mockserver.dto.BookingDomainModels;
 import com.example.mockserver.exception.ApiException;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -14,48 +13,47 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Service
-public class MockDomainService {
+public abstract class AbstractBookingService {
 
     private static final int DEFAULT_SAMPLE_RESOURCE_COUNT = 12;
     private static final int MIN_SCHEDULE_ITEMS = 10;
     private static final int MAX_PAGE_SIZE = 100;
     private static final int MAX_PAGE_NUMBER = 10_000;
 
-    private final Map<String, ApiDtos.ResourceDetail> resources = new ConcurrentHashMap<>();
+    private final Map<String, BookingDomainModels.ResourceDetail> resources = new ConcurrentHashMap<>();
     private final Map<String, ReservationEntity> reservations = new ConcurrentHashMap<>();
 
-    public MockDomainService() {
+    protected AbstractBookingService() {
         initializeSampleResources();
     }
 
-    public ApiDtos.ResourceListResponse listResources(int page, int size, String category) {
+    protected BookingDomainModels.ResourceListResponse listResourcesModel(int page, int size, String category) {
         validateListResourcesRequest(page, size);
 
-        List<ApiDtos.ResourceSummary> filtered = resources.values().stream()
+        List<BookingDomainModels.ResourceSummary> filtered = resources.values().stream()
                 .filter(v -> category == null || category.isBlank() || v.category().equalsIgnoreCase(category))
-                .sorted(Comparator.comparing(ApiDtos.ResourceDetail::resourceId))
-                .map(v -> new ApiDtos.ResourceSummary(v.resourceId(), v.name(), v.category(), v.active()))
+                .sorted(Comparator.comparing(BookingDomainModels.ResourceDetail::resourceId))
+                .map(v -> new BookingDomainModels.ResourceSummary(v.resourceId(), v.name(), v.category(), v.active()))
                 .toList();
 
         long offset = (long) page * size;
         int from = (int) Math.min(offset, filtered.size());
         int to = (int) Math.min(offset + size, filtered.size());
-        List<ApiDtos.ResourceSummary> paged = filtered.subList(from, to);
+        List<BookingDomainModels.ResourceSummary> paged = filtered.subList(from, to);
 
-        return new ApiDtos.ResourceListResponse(paged, page, size, filtered.size());
+        return new BookingDomainModels.ResourceListResponse(paged, page, size, filtered.size());
     }
 
-    public ApiDtos.ResourceDetail getResource(String resourceId) {
-        ApiDtos.ResourceDetail detail = resources.get(resourceId);
+    protected BookingDomainModels.ResourceDetail getResourceModel(String resourceId) {
+        BookingDomainModels.ResourceDetail detail = resources.get(resourceId);
         if (detail == null) {
             throw new ApiException("RESOURCE_NOT_FOUND", "Resource not found: " + resourceId, HttpStatus.NOT_FOUND.value());
         }
         return detail;
     }
 
-    public ApiDtos.InventoryStatus getInventory(String resourceId, LocalDate date) {
-        getResource(resourceId);
+    protected BookingDomainModels.InventoryStatus getInventoryModel(String resourceId, LocalDate date) {
+        getResourceModel(resourceId);
         int total = 100;
         int reserved = (int) reservations.values().stream()
                 .filter(r -> r.resourceId().equals(resourceId))
@@ -63,16 +61,16 @@ public class MockDomainService {
                 .mapToInt(ReservationEntity::quantity)
                 .sum();
         int available = Math.max(0, total - reserved);
-        return new ApiDtos.InventoryStatus(resourceId, date, total, available, reserved);
+        return new BookingDomainModels.InventoryStatus(resourceId, date, total, available, reserved);
     }
 
-    public ApiDtos.ScheduleListResponse getSchedules(String resourceId, OffsetDateTime from, OffsetDateTime to) {
-        getResource(resourceId);
+    protected BookingDomainModels.ScheduleListResponse getSchedulesModel(String resourceId, OffsetDateTime from, OffsetDateTime to) {
+        getResourceModel(resourceId);
         if (!from.isBefore(to)) {
             throw new ApiException("INVALID_RANGE", "from must be before to", HttpStatus.BAD_REQUEST.value());
         }
 
-        List<ApiDtos.ScheduleItem> items = new ArrayList<>();
+        List<BookingDomainModels.ScheduleItem> items = new ArrayList<>();
         OffsetDateTime cursor = from.withMinute(0).withSecond(0).withNano(0);
         while (cursor.isBefore(to)) {
             OffsetDateTime next = cursor.plusHours(1);
@@ -80,7 +78,7 @@ public class MockDomainService {
                 break;
             }
             String scheduleId = resourceId + "-" + cursor.toLocalDate() + "-" + cursor.getHour();
-            items.add(new ApiDtos.ScheduleItem(scheduleId, cursor, next, "AVAILABLE"));
+            items.add(new BookingDomainModels.ScheduleItem(scheduleId, cursor, next, "AVAILABLE"));
             cursor = next;
         }
 
@@ -89,29 +87,29 @@ public class MockDomainService {
             OffsetDateTime start = cursor;
             OffsetDateTime end = cursor.plusHours(1);
             String scheduleId = resourceId + "-" + start.toLocalDate() + "-" + start.getHour();
-            items.add(new ApiDtos.ScheduleItem(scheduleId, start, end, "AVAILABLE"));
+            items.add(new BookingDomainModels.ScheduleItem(scheduleId, start, end, "AVAILABLE"));
             cursor = end;
         }
-        return new ApiDtos.ScheduleListResponse(resourceId, items);
+        return new BookingDomainModels.ScheduleListResponse(resourceId, items);
     }
 
-    public ApiDtos.DailyScheduleListResponse listDailySchedules(LocalDate date) {
-        List<ApiDtos.DailyScheduleItem> items = resources.keySet().stream()
+    protected BookingDomainModels.DailyScheduleListResponse listDailySchedulesModel(LocalDate date) {
+        List<BookingDomainModels.DailyScheduleItem> items = resources.keySet().stream()
                 .sorted()
                 .map(resourceId -> {
                     OffsetDateTime start = date.atTime(9, 0).atOffset(ZoneOffset.ofHours(9));
                     OffsetDateTime end = start.plusHours(1);
                     String scheduleId = resourceId + "-" + date + "-9";
-                    return new ApiDtos.DailyScheduleItem(resourceId, scheduleId, start, end, "AVAILABLE");
+                    return new BookingDomainModels.DailyScheduleItem(resourceId, scheduleId, start, end, "AVAILABLE");
                 }).toList();
-        return new ApiDtos.DailyScheduleListResponse(date, items);
+        return new BookingDomainModels.DailyScheduleListResponse(date, items);
     }
 
-    public ApiDtos.ReservationCreateResponse createReservation(ApiDtos.ReservationCreateRequest request) {
+    protected BookingDomainModels.ReservationCreateResponse createReservationModel(BookingDomainModels.ReservationCreateRequest request) {
         validateCreateRequest(request);
-        getResource(request.resourceId());
+        getResourceModel(request.resourceId());
 
-        int available = getInventory(request.resourceId(), LocalDate.now()).availableQuantity();
+        int available = getInventoryModel(request.resourceId(), LocalDate.now()).availableQuantity();
         if (request.quantity() > available) {
             throw new ApiException("RESERVATION_CONFLICT", "Insufficient inventory", HttpStatus.CONFLICT.value());
         }
@@ -128,27 +126,27 @@ public class MockDomainService {
                 now,
                 null
         ));
-        return new ApiDtos.ReservationCreateResponse(reservationId, "CREATED", now);
+        return new BookingDomainModels.ReservationCreateResponse(reservationId, "CREATED", now);
     }
 
-    public ApiDtos.ReservationCancelResponse cancelReservation(String reservationId,
-                                                               ApiDtos.ReservationCancelRequest request) {
+    protected BookingDomainModels.ReservationCancelResponse cancelReservationModel(String reservationId,
+                                                                                   BookingDomainModels.ReservationCancelRequest request) {
         if (request == null || request.reason() == null || request.reason().isBlank()) {
             throw new ApiException("INVALID_REQUEST", "Cancel reason is required", HttpStatus.BAD_REQUEST.value());
         }
         ReservationEntity current = getReservationEntity(reservationId);
         if ("CANCELED".equals(current.status())) {
-            return new ApiDtos.ReservationCancelResponse(reservationId, "CANCELED", current.canceledAt());
+            return new BookingDomainModels.ReservationCancelResponse(reservationId, "CANCELED", current.canceledAt());
         }
 
         OffsetDateTime canceledAt = OffsetDateTime.now();
         reservations.put(reservationId, current.withStatus("CANCELED", canceledAt));
-        return new ApiDtos.ReservationCancelResponse(reservationId, "CANCELED", canceledAt);
+        return new BookingDomainModels.ReservationCancelResponse(reservationId, "CANCELED", canceledAt);
     }
 
-    public ApiDtos.ReservationDetailResponse getReservation(String reservationId) {
+    protected BookingDomainModels.ReservationDetailResponse getReservationModel(String reservationId) {
         ReservationEntity entity = getReservationEntity(reservationId);
-        return new ApiDtos.ReservationDetailResponse(
+        return new BookingDomainModels.ReservationDetailResponse(
                 entity.reservationId(),
                 entity.resourceId(),
                 entity.scheduleId(),
@@ -160,7 +158,7 @@ public class MockDomainService {
         );
     }
 
-    private void validateCreateRequest(ApiDtos.ReservationCreateRequest request) {
+    private void validateCreateRequest(BookingDomainModels.ReservationCreateRequest request) {
         if (request == null) {
             throw new ApiException("INVALID_REQUEST", "Request body is required", HttpStatus.BAD_REQUEST.value());
         }
@@ -197,7 +195,7 @@ public class MockDomainService {
         for (int i = 1; i <= DEFAULT_SAMPLE_RESOURCE_COUNT; i++) {
             String resourceId = "R-%03d".formatted(i);
             String category = i % 3 == 0 ? "EQUIPMENT" : (i % 2 == 0 ? "STUDIO" : "SPACE");
-            resources.put(resourceId, new ApiDtos.ResourceDetail(
+            resources.put(resourceId, new BookingDomainModels.ResourceDetail(
                     resourceId,
                     "Resource " + i,
                     category,

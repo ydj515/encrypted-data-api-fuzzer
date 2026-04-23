@@ -1,33 +1,32 @@
 openapi: 3.0.3
 info:
-  title: CATS Plain API for Gateway Fuzzing
+  title: orgA A Plain API
   version: 1.0.0
   description: |
-    CATS 퍼저가 사용하는 평문 API 명세입니다.
-    실제 호출 경로는 Gateway를 통과하며, Gateway 이후 구간에서 암복호화가 수행됩니다.
+    orgA 기관의 A 서비스용 mock plain API 명세입니다.
+    현재 booking/resource/reservation 시나리오를 그대로 사용합니다.
 servers:
-  - url: http://localhost:28080
-    description: Gateway local server
+  - url: http://localhost:18080
+    description: Mock REST API Server local server
 tags:
   - name: Resource
     description: 자원 조회/재고/스케줄 API
   - name: Reservation
     description: 예약 생성/취소/상세 조회 API
 paths:
-  /cats/{org}/{service}/resources:
+  /cats/orgA/A/resources:
     get:
       tags: [Resource]
       summary: 자원 목록 조회
-      operationId: listResources
+      operationId: orgAListResources
       parameters:
-        - $ref: "#/components/parameters/Org"
-        - $ref: "#/components/parameters/Service"
         - name: page
           in: query
           required: false
           schema:
             type: integer
             minimum: 0
+            maximum: 10000
             default: 0
         - name: size
           in: query
@@ -53,15 +52,35 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Resource]
+      summary: 자원 목록 조회(본문 기반)
+      operationId: orgAListResourcesByBody
+      description: Gateway 업스트림 호출과 동일한 POST 호환 엔드포인트입니다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceListRequest"
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
-  /cats/{org}/{service}/resources/{resourceId}:
+  /cats/orgA/A/resources/{resourceId}:
     get:
       tags: [Resource]
-      summary: 자원 상세조회
-      operationId: getResourceDetail
+      summary: 자원 상세 조회
+      operationId: orgAGetResourceDetail
       parameters:
-        - $ref: "#/components/parameters/Org"
-        - $ref: "#/components/parameters/Service"
         - $ref: "#/components/parameters/ResourceId"
       responses:
         "200":
@@ -72,22 +91,38 @@ paths:
                 $ref: "#/components/schemas/ResourceDetail"
         "404":
           $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Resource]
+      summary: 자원 상세 조회(POST 호환)
+      operationId: orgAGetResourceDetailByBody
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IgnoredRequestBody"
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
-  /cats/{org}/{service}/resources/{resourceId}/inventory:
+  /cats/orgA/A/resources/{resourceId}/inventory:
     get:
       tags: [Resource]
       summary: 자원 재고 확인
-      operationId: getResourceInventory
+      operationId: orgAGetResourceInventory
       parameters:
-        - $ref: "#/components/parameters/Org"
-        - $ref: "#/components/parameters/Service"
         - $ref: "#/components/parameters/ResourceId"
         - name: date
           in: query
           required: true
-          description: 조회 기준 일자 (yyyy-MM-dd)
           schema:
             type: string
             format: date
@@ -102,27 +137,46 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Resource]
+      summary: 자원 재고 확인(본문 기반)
+      operationId: orgAGetResourceInventoryByBody
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryRequest"
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
-  /cats/{org}/{service}/resources/{resourceId}/schedules:
+  /cats/orgA/A/resources/{resourceId}/schedules:
     get:
       tags: [Resource]
-      summary: 자원 스케쥴 조회
-      operationId: getResourceSchedules
+      summary: 자원 스케줄 조회
+      operationId: orgAGetResourceSchedules
       parameters:
-        - $ref: "#/components/parameters/Org"
-        - $ref: "#/components/parameters/Service"
         - $ref: "#/components/parameters/ResourceId"
         - name: from
           in: query
           required: true
-          description: 시작 일시 (ISO-8601)
           schema:
             type: string
             format: date-time
         - name: to
           in: query
           required: true
-          description: 종료 일시 (ISO-8601)
           schema:
             type: string
             format: date-time
@@ -137,19 +191,39 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Resource]
+      summary: 자원 스케줄 조회(본문 기반)
+      operationId: orgAGetResourceSchedulesByBody
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleRangeRequest"
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
-  /cats/{org}/{service}/schedules/daily:
+  /cats/orgA/A/schedules/daily:
     get:
       tags: [Resource]
-      summary: 일별 스케쥴 목록 조회
-      operationId: listDailySchedules
+      summary: 일별 스케줄 목록 조회
+      operationId: orgAListDailySchedules
       parameters:
-        - $ref: "#/components/parameters/Org"
-        - $ref: "#/components/parameters/Service"
         - name: date
           in: query
           required: true
-          description: 조회 일자 (yyyy-MM-dd)
           schema:
             type: string
             format: date
@@ -162,15 +236,31 @@ paths:
                 $ref: "#/components/schemas/DailyScheduleListResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
+    post:
+      tags: [Resource]
+      summary: 일별 스케줄 목록 조회(본문 기반)
+      operationId: orgAListDailySchedulesByBody
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DailyScheduleRequest"
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyScheduleListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
 
-  /cats/{org}/{service}/reservations:
+  /cats/orgA/A/reservations:
     post:
       tags: [Reservation]
       summary: 예약 생성
-      operationId: createReservation
-      parameters:
-        - $ref: "#/components/parameters/Org"
-        - $ref: "#/components/parameters/Service"
+      operationId: orgACreateReservation
       requestBody:
         required: true
         content:
@@ -186,21 +276,17 @@ paths:
                 $ref: "#/components/schemas/ReservationCreateResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
-          description: 중복/재고 부족 등 예약 충돌
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/Conflict"
 
-  /cats/{org}/{service}/reservations/{reservationId}/cancel:
+  /cats/orgA/A/reservations/{reservationId}/cancel:
     post:
       tags: [Reservation]
       summary: 예약 취소
-      operationId: cancelReservation
+      operationId: orgACancelReservation
       parameters:
-        - $ref: "#/components/parameters/Org"
-        - $ref: "#/components/parameters/Service"
         - $ref: "#/components/parameters/ReservationId"
       requestBody:
         required: true
@@ -220,15 +306,34 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /cats/{org}/{service}/reservations/{reservationId}:
+  /cats/orgA/A/reservations/{reservationId}:
     get:
       tags: [Reservation]
-      summary: 예약 상세정보 조회
-      operationId: getReservationDetail
+      summary: 예약 상세 조회
+      operationId: orgAGetReservationDetail
       parameters:
-        - $ref: "#/components/parameters/Org"
-        - $ref: "#/components/parameters/Service"
         - $ref: "#/components/parameters/ReservationId"
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Reservation]
+      summary: 예약 상세 조회(POST 호환)
+      operationId: orgAGetReservationDetailByBody
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IgnoredRequestBody"
       responses:
         "200":
           description: 성공
@@ -241,22 +346,6 @@ paths:
 
 components:
   parameters:
-    Org:
-      name: org
-      in: path
-      required: true
-      schema:
-        type: string
-        minLength: 1
-        maxLength: 50
-    Service:
-      name: service
-      in: path
-      required: true
-      schema:
-        type: string
-        minLength: 1
-        maxLength: 50
     ResourceId:
       name: resourceId
       in: path
@@ -265,6 +354,7 @@ components:
         type: string
         minLength: 1
         maxLength: 100
+      example: R-001
     ReservationId:
       name: reservationId
       in: path
@@ -273,6 +363,7 @@ components:
         type: string
         minLength: 1
         maxLength: 100
+      example: RSV-1700000000000
 
   responses:
     BadRequest:
@@ -287,6 +378,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: 예약 충돌 또는 재고 부족
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
     InternalServerError:
       description: 내부 서버 오류
       content:
@@ -295,6 +392,53 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
 
   schemas:
+    ResourceListRequest:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          default: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        category:
+          type: string
+
+    InventoryRequest:
+      type: object
+      required: [date]
+      properties:
+        date:
+          type: string
+          format: date
+
+    ScheduleRangeRequest:
+      type: object
+      required: [from, to]
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+
+    DailyScheduleRequest:
+      type: object
+      required: [date]
+      properties:
+        date:
+          type: string
+          format: date
+
+    IgnoredRequestBody:
+      type: object
+      additionalProperties: true
+
     ResourceListResponse:
       type: object
       required: [items, page, size, total]
@@ -305,13 +449,11 @@ components:
             $ref: "#/components/schemas/ResourceSummary"
         page:
           type: integer
-          minimum: 0
         size:
           type: integer
-          minimum: 1
         total:
           type: integer
-          minimum: 0
+          format: int64
 
     ResourceSummary:
       type: object
@@ -323,6 +465,7 @@ components:
           type: string
         category:
           type: string
+          enum: [SPACE, STUDIO, EQUIPMENT]
         active:
           type: boolean
 
@@ -342,8 +485,7 @@ components:
 
     InventoryStatus:
       type: object
-      required:
-        [resourceId, date, totalQuantity, availableQuantity, reservedQuantity]
+      required: [resourceId, date, totalQuantity, availableQuantity, reservedQuantity]
       properties:
         resourceId:
           type: string
@@ -352,13 +494,10 @@ components:
           format: date
         totalQuantity:
           type: integer
-          minimum: 0
         availableQuantity:
           type: integer
-          minimum: 0
         reservedQuantity:
           type: integer
-          minimum: 0
 
     ScheduleListResponse:
       type: object
@@ -385,7 +524,7 @@ components:
           format: date-time
         status:
           type: string
-          enum: [AVAILABLE, RESERVED, BLOCKED]
+          enum: [AVAILABLE]
 
     DailyScheduleListResponse:
       type: object
@@ -415,7 +554,7 @@ components:
           format: date-time
         status:
           type: string
-          enum: [AVAILABLE, RESERVED, BLOCKED]
+          enum: [AVAILABLE]
 
     ReservationCreateRequest:
       type: object
@@ -433,7 +572,6 @@ components:
           maximum: 9999
         memo:
           type: string
-          maxLength: 500
 
     ReservationCreateResponse:
       type: object
@@ -443,7 +581,7 @@ components:
           type: string
         status:
           type: string
-          enum: [CREATED, CONFIRMED, WAITLISTED]
+          enum: [CREATED]
         createdAt:
           type: string
           format: date-time
@@ -455,7 +593,6 @@ components:
         reason:
           type: string
           minLength: 1
-          maxLength: 200
 
     ReservationCancelResponse:
       type: object
@@ -472,14 +609,7 @@ components:
 
     ReservationDetailResponse:
       type: object
-      required:
-        - reservationId
-        - resourceId
-        - scheduleId
-        - userId
-        - quantity
-        - status
-        - createdAt
+      required: [reservationId, resourceId, scheduleId, userId, quantity, status, createdAt]
       properties:
         reservationId:
           type: string
@@ -491,10 +621,9 @@ components:
           type: string
         quantity:
           type: integer
-          minimum: 1
         status:
           type: string
-          enum: [CREATED, CONFIRMED, WAITLISTED, CANCELED]
+          enum: [CREATED, CANCELED]
         createdAt:
           type: string
           format: date-time
@@ -505,11 +634,10 @@ components:
 
     ErrorResponse:
       type: object
-      required: [code, message]
+      required: [code, message, traceId]
       properties:
         code:
           type: string
-          example: INVALID_REQUEST
         message:
           type: string
         traceId:
