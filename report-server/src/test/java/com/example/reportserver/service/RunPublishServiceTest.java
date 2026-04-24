@@ -1,5 +1,6 @@
 package com.example.reportserver.service;
 
+import com.example.reportserver.contract.GatewayContract;
 import com.example.reportserver.model.TestCaseGranularity;
 import com.example.reportserver.model.TestRun;
 import com.example.reportserver.model.TestSource;
@@ -14,6 +15,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,8 +46,7 @@ class RunPublishServiceTest {
         String runId = publishService.publishKarate(
                 "karate-test-run",
                 sourceReportDir,
-                "catsOrg",
-                "booking",
+                contract("gw-cats-booking", "catsOrg", "booking"),
                 null,
                 TestCaseGranularity.BOTH
         );
@@ -60,6 +62,9 @@ class RunPublishServiceTest {
         TestRun run = storageService.findRun(runId).orElseThrow();
         assertThat(run.getReportPath()).isEqualTo("/reports/karate-test-run/report/karate-summary.html");
         assertThat(run.getCaseGranularity()).isEqualTo(TestCaseGranularity.BOTH);
+        assertThat(run.getContractId()).isEqualTo("gw-cats-booking");
+        assertThat(run.getContractPath()).isEqualTo("/contracts/catsOrg-booking-gw-openapi.yaml");
+        assertThat(run.getContractChecksum()).isEqualTo("checksum-catsOrg-booking");
         assertThat(storageService.findCases(runId)).hasSize(2);
     }
 
@@ -81,9 +86,8 @@ class RunPublishServiceTest {
         String runId = publishService.publishCats(
                 "cats-test-run",
                 sourceReportDir,
-                "catsOrg",
-                "booking",
-                null
+                contract("gw-cats-booking", "catsOrg", "booking"),
+                "listResources"
         );
 
         Path runDir = dataDir.resolve(runId);
@@ -95,6 +99,7 @@ class RunPublishServiceTest {
         assertThat(run.getSource()).isEqualTo(TestSource.CATS);
         assertThat(run.getTotalCount()).isEqualTo(1);
         assertThat(run.getPassCount()).isEqualTo(1);
+        assertThat(run.getOperationId()).isEqualTo("listResourcesViaGateway");
         assertThat(run.getReportPath()).isEqualTo("/reports/cats-test-run/report/index.html");
         assertThat(storageService.findCases(runId))
                 .hasSize(1)
@@ -120,8 +125,7 @@ class RunPublishServiceTest {
         assertThatThrownBy(() -> publishService.publishKarate(
                 "a/b",
                 sourceReportDir,
-                "catsOrg",
-                "booking",
+                contract("gw-cats-booking", "catsOrg", "booking"),
                 null,
                 TestCaseGranularity.BOTH
         ))
@@ -186,5 +190,20 @@ class RunPublishServiceTest {
                   }
                 }
                 """);
+    }
+
+    private GatewayContract contract(String id, String org, String service) {
+        return GatewayContract.builder()
+                .id(id)
+                .org(org)
+                .service(service)
+                .contractPath("/contracts/%s-%s-gw-openapi.yaml".formatted(org, service))
+                .checksum("checksum-" + org + "-" + service)
+                .apis(List.of("createReservation", "listResources"))
+                .operationIdsByApi(Map.of(
+                        "createReservation", "createReservationViaGateway",
+                        "listResources", "listResourcesViaGateway"
+                ))
+                .build();
     }
 }

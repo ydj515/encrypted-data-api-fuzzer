@@ -12,17 +12,28 @@ mise run report:run
 ```
 
 ```bash
-# Karate + CATS 실행 후 레포트 발행
-SOURCE=all mise run test
+# 전체 기관/전체 서비스에 대해 Karate + CATS 실행 후 레포트 발행
+mise run test
 
-# Karate만 실행
+# 전체 기관/전체 서비스에 대해 Karate만 실행
 SOURCE=karate mise run test
 
-# CATS만 실행
+# 전체 기관/전체 서비스에 대해 CATS만 실행
 SOURCE=cats mise run test
+
+# 첫 실패에서 즉시 중단
+FAIL_FAST=true mise run test
+
+# 특정 서비스만 실행
+ORG=orgB SERVICE=visit mise run test
 
 # 특정 API만 실행
 ORG=catsOrg SERVICE=booking API=createReservation SOURCE=karate mise run test
+
+# shell script로 직접 실행
+./scripts/run-tests-matrix.sh
+SOURCE=cats ./scripts/run-tests-matrix.sh orgB support listDevices
+FAIL_FAST=true ./scripts/run-tests-matrix.sh
 ```
 
 레포트 UI는 아래 주소에서 확인합니다.
@@ -30,6 +41,16 @@ ORG=catsOrg SERVICE=booking API=createReservation SOURCE=karate mise run test
 ```text
 http://localhost:48080/
 ```
+
+빠르게 찾을 수 있도록 주요 리포트 경로를 먼저 정리하면 아래와 같습니다.
+
+| 경로 | 역할 | 비고 |
+|---|---|---|
+| `output/` | 수동 검증용 실행 로그와 임시 산출물 보관 | 예: `output/full-matrix.log`, `output/karate-failfast.log` |
+| `cats-report/` | CATS가 가장 최근 로컬 실행에서 생성한 raw 리포트 | publish 전 원본 HTML/JSON 자산 |
+| `report-server/data/runs/` | `report-server`가 읽는 최종 발행 저장소 | UI/API가 참조하는 canonical run 데이터 |
+
+`Karate`의 raw 리포트는 별도로 `karate-tests/build/karate-reports/karate-reports/` 아래에 생성됩니다. `Karate`, `CATS` raw 리포트는 publish 스크립트를 거쳐 `report-server/data/runs/{runId}/` 아래로 복사됩니다.
 
 
 ## CATS 리포트 보는 법
@@ -169,7 +190,7 @@ BLACKBOX=true SKIP_IGNORED_REPORTING=true \
 ### Full 모드 (전체 실행)
 - booking 기본 계약 파일: `docs/openapi/gateway/cats-gw-openapi.yaml`
 - 서비스별 예시:
-  - `docs/openapi/gateway/orgA-A-gw-openapi.yaml`
+  - `docs/openapi/gateway/orgA-reservation-gw-openapi.yaml`
   - `docs/openapi/gateway/orgB-visit-gw-openapi.yaml`
   - `docs/openapi/gateway/orgB-support-gw-openapi.yaml`
 - 기본값은 일반 모드입니다. 필요 시 smoke와 동일하게 `BLACKBOX`, `SKIP_IGNORED_REPORTING`을 사용할 수 있습니다.

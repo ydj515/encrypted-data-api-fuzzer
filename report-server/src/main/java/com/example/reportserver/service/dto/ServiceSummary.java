@@ -11,6 +11,7 @@ import java.util.List;
 @Value
 @Builder
 public class ServiceSummary {
+    String contractId;
     String org;
     String service;
     List<String> apis;

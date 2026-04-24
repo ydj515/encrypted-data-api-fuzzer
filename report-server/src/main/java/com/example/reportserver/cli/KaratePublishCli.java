@@ -1,8 +1,10 @@
 package com.example.reportserver.cli;
 
+import com.example.reportserver.contract.GatewayContract;
 import com.example.reportserver.model.TestCaseGranularity;
 import com.example.reportserver.parser.KarateCaseParser;
 import com.example.reportserver.parser.KarateReportParser;
+import com.example.reportserver.service.GatewayContractCatalogService;
 import com.example.reportserver.service.RunPublishService;
 import com.example.reportserver.service.RunStorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +21,7 @@ public final class KaratePublishCli {
 
     private static final String DEFAULT_REPORT_DIR = "../karate-tests/build/karate-reports/karate-reports";
     private static final String DEFAULT_DATA_DIR = "data/runs";
+    private static final String DEFAULT_GATEWAY_CONTRACT_CATALOG_PATH = "../docs/openapi/gateway/catalog.yaml";
 
     private KaratePublishCli() {
     }
@@ -31,10 +34,18 @@ public final class KaratePublishCli {
         Path dataDir = Path.of(value(options, "data-dir", "REPORT_DATA_DIR", DEFAULT_DATA_DIR))
                 .toAbsolutePath()
                 .normalize();
-        String org = requiredValue(options, "org", "ORG");
-        String service = requiredValue(options, "service", "SERVICE");
         String api = blankToNull(value(options, "api", "API", null));
         String runId = blankToNull(value(options, "run-id", "RUN_ID", null));
+        String contractId = blankToNull(value(options, "contract-id", "CONTRACT_ID", null));
+        String contractPath = blankToNull(value(options, "contract-path", "CONTRACT_PATH", null));
+        Path catalogPath = Path.of(value(
+                        options,
+                        "contract-catalog-path",
+                        "GATEWAY_CONTRACT_CATALOG_PATH",
+                        DEFAULT_GATEWAY_CONTRACT_CATALOG_PATH
+                ))
+                .toAbsolutePath()
+                .normalize();
         String granularityValue = value(options, "case-granularity", "TEST_CASE_GRANULARITY", null);
         if (granularityValue == null || granularityValue.isBlank()) {
             granularityValue = System.getenv("CASE_GRANULARITY");
@@ -49,12 +60,18 @@ public final class KaratePublishCli {
                 new KarateCaseParser(objectMapper),
                 new RunStorageService(dataDir, objectMapper)
         );
+        GatewayContractCatalogService contractCatalogService = new GatewayContractCatalogService(catalogPath);
+        GatewayContract contract = contractCatalogService.resolveContract(contractId, contractPath)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "--contract-id/CONTRACT_ID or --contract-path/CONTRACT_PATH is required"
+                ));
 
-        String publishedRunId = publishService.publishKarate(runId, reportDir, org, service, api, granularity);
+        String publishedRunId = publishService.publishKarate(runId, reportDir, contract, api, granularity);
 
         System.out.println("Karate 리포트 발행 완료: " + publishedRunId);
         System.out.println("저장 위치: " + dataDir.resolve(publishedRunId));
         System.out.println("케이스 단위: " + granularity);
+        System.out.println("계약 ID: " + (contract.getId() != null ? contract.getId() : "(unregistered)"));
     }
 
     private static Map<String, String> parseOptions(String[] args) {

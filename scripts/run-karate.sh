@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+KARATE_BUILD_DIR="$ROOT_DIR/karate-tests/build/karate-reports"
 
 ORG="${ORG:-catsOrg}"
 SERVICE="${SERVICE:-booking}"
@@ -20,4 +21,6 @@ echo "  SERVICE=${SERVICE}"
 echo "  API=${API:-전체}"
 echo "  GATEWAY_URL=${GATEWAY_URL}"
 
-(cd "$ROOT_DIR/karate-tests" && ./gradlew test)
+rm -rf "$KARATE_BUILD_DIR"
+
+(cd "$ROOT_DIR/karate-tests" && ./gradlew test --rerun-tasks)

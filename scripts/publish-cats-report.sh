@@ -9,6 +9,9 @@ REPORT_DATA_DIR="${REPORT_DATA_DIR:-$ROOT_DIR/report-server/data/runs}"
 ORG="${ORG:-catsOrg}"
 SERVICE="${SERVICE:-booking}"
 API="${API:-}"
+DEFAULT_CONTRACT_PATH="$(bash "$SCRIPT_DIR/resolve-gw-contract.sh" "$ORG" "$SERVICE" path)"
+CONTRACT_PATH="${CONTRACT_PATH:-$DEFAULT_CONTRACT_PATH}"
+GATEWAY_CONTRACT_CATALOG_PATH="${GATEWAY_CONTRACT_CATALOG_PATH:-$ROOT_DIR/docs/openapi/gateway/catalog.yaml}"
 
 if [ -n "${CATS_REPORT_DIR:-}" ]; then
   REPORT_DIR="$CATS_REPORT_DIR"
@@ -23,12 +26,13 @@ fi
 
 export CATS_REPORT_DIR="$REPORT_DIR"
 export REPORT_DATA_DIR
-export ORG
-export SERVICE
 export API
+export CONTRACT_PATH
+export GATEWAY_CONTRACT_CATALOG_PATH
 
 echo "CATS 리포트: $CATS_REPORT_DIR"
 echo "저장소: $REPORT_DATA_DIR"
+echo "계약 파일: $CONTRACT_PATH"
 
 if [ -n "${REPORT_PUBLISHER_JAR:-}" ]; then
   java -jar "$REPORT_PUBLISHER_JAR" publish-cats

@@ -31,11 +31,19 @@ description = "Karate 리포트를 공유 저장소로 발행 (ORG/SERVICE/API/T
 run = "scripts/publish-karate-report.sh"
 
 [tasks."karate"]
-description = "Karate 실행 + 리포트 발행"
-run = "SOURCE=karate scripts/run-tests.sh"
+description = "Karate 실행 + 리포트 발행 (기본: 전체 서비스, ORG/SERVICE/API로 범위 제한)"
+run = "SOURCE=karate scripts/run-tests-matrix.sh"
 
 [tasks.test]
-description = "통합 테스트 실행 (SOURCE=karate|cats|all, ORG/SERVICE/API로 범위 제한)"
+description = "통합 테스트 매트릭스 실행 (기본: 전체 서비스, SOURCE=karate|cats|all, ORG/SERVICE/API로 범위 제한)"
+run = "scripts/run-tests-matrix.sh"
+
+[tasks."test:all-services"]
+description = "통합 테스트 매트릭스 실행 명시 태스크 (기본: 전체 서비스)"
+run = "scripts/run-tests-matrix.sh"
+
+[tasks."test:single"]
+description = "단일 기관/서비스 대상 통합 테스트 실행 (기본: catsOrg/booking)"
 run = "scripts/run-tests.sh"
 
 [tasks."unit:test"]
@@ -56,8 +64,8 @@ description = "CATS 리포트를 report-server 저장소로 발행 (ORG/SERVICE/
 run = "scripts/publish-cats-report.sh"
 
 [tasks."cats"]
-description = "CATS 실행 + 리포트 발행"
-run = "SOURCE=cats scripts/run-tests.sh"
+description = "CATS 실행 + 리포트 발행 (기본: 전체 서비스, ORG/SERVICE/API로 범위 제한)"
+run = "SOURCE=cats scripts/run-tests-matrix.sh"
 
 [tasks."report:run"]
 description = "Start report-server (port 48080)"

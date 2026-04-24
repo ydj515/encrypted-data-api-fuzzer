@@ -18,6 +18,10 @@ public class TestRun {
     private String org;
     private String service;
     private String api;
+    private String operationId;
+    private String contractId;
+    private String contractPath;
+    private String contractChecksum;
     private TestSource source;
     private TestCaseGranularity caseGranularity;
 

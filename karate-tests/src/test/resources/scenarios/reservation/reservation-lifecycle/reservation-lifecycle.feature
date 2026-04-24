@@ -1,10 +1,10 @@
-@service=A @api=createReservation
-Feature: orgA A 예약 전체 생명주기
+@service=reservation @api=createReservation
+Feature: orgA 예약 서비스 예약 전체 생명주기
 
   Background:
     * url gatewayUrl
     * def org = 'orgA'
-    * def service = 'A'
+    * def service = 'reservation'
     * def basePath = '/cats/' + org + '/' + service
 
   Scenario: 예약 생성 후 조회하고 취소한다

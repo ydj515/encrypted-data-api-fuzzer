@@ -1,5 +1,6 @@
 package com.example.reportserver.service;
 
+import com.example.reportserver.contract.GatewayContract;
 import com.example.reportserver.model.TestCase;
 import com.example.reportserver.model.TestCaseGranularity;
 import com.example.reportserver.model.TestRun;
@@ -40,11 +41,11 @@ public class RunPublishService {
     public String publishKarate(
             String runId,
             Path reportDir,
-            String org,
-            String service,
+            GatewayContract contract,
             String api,
             TestCaseGranularity caseGranularity
     ) {
+        validateContract(contract);
         String effectiveRunId = canonicalRunId(runId);
         TestCaseGranularity effectiveGranularity =
                 caseGranularity == null ? TestCaseGranularity.BOTH : caseGranularity;
@@ -67,12 +68,13 @@ public class RunPublishService {
             TestRun run = karateReportParser.parse(
                     stagedReportDir,
                     effectiveRunId,
-                    org,
-                    service,
+                    contract.getOrg(),
+                    contract.getService(),
                     api,
                     effectiveGranularity
             );
             List<TestCase> cases = karateCaseParser.parse(stagedReportDir, effectiveRunId, effectiveGranularity);
+            applyContractMetadata(run, contract, api);
 
             runStorageService.writeRun(tempRunDir, run);
             runStorageService.writeCases(tempRunDir, cases);
@@ -91,10 +93,10 @@ public class RunPublishService {
     public String publishCats(
             String runId,
             Path reportDir,
-            String org,
-            String service,
+            GatewayContract contract,
             String api
     ) {
+        validateContract(contract);
         String effectiveRunId = canonicalRunId(runId, TestSource.CATS);
         Path finalRunDir = runStorageService.runDir(effectiveRunId);
         Path tempRunDir = runStorageService.baseDir()
@@ -112,8 +114,20 @@ public class RunPublishService {
             Files.createDirectories(runStorageService.baseDir());
             copyDirectory(reportDir, stagedReportDir);
 
-            TestRun run = catsReportParser.parseRun(stagedReportDir, effectiveRunId, org, service, api);
-            List<TestCase> cases = catsReportParser.parseCases(stagedReportDir, effectiveRunId, org, service);
+            TestRun run = catsReportParser.parseRun(
+                    stagedReportDir,
+                    effectiveRunId,
+                    contract.getOrg(),
+                    contract.getService(),
+                    api
+            );
+            List<TestCase> cases = catsReportParser.parseCases(
+                    stagedReportDir,
+                    effectiveRunId,
+                    contract.getOrg(),
+                    contract.getService()
+            );
+            applyContractMetadata(run, contract, api);
 
             runStorageService.writeRun(tempRunDir, run);
             runStorageService.writeCases(tempRunDir, cases);
@@ -161,6 +175,22 @@ public class RunPublishService {
 
     private String canonicalRunId(String runId) {
         return canonicalRunId(runId, TestSource.KARATE);
+    }
+
+    private void validateContract(GatewayContract contract) {
+        if (contract == null) {
+            throw new IllegalArgumentException("Gateway contract is required");
+        }
+    }
+
+    private void applyContractMetadata(TestRun run, GatewayContract contract, String api) {
+        run.setOrg(contract.getOrg());
+        run.setService(contract.getService());
+        run.setApi(api);
+        run.setOperationId(contract.findOperationId(api));
+        run.setContractId(contract.getId());
+        run.setContractPath(contract.getContractPath());
+        run.setContractChecksum(contract.getChecksum());
     }
 
     private void copyDirectory(Path sourceDir, Path targetDir) throws IOException {

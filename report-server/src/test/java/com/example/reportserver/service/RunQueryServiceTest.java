@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,16 +24,21 @@ class RunQueryServiceTest {
     @TempDir
     Path dataDir;
 
+    @TempDir
+    Path contractDir;
+
     private RunStorageService storageService;
     private RunQueryService queryService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         storageService = new RunStorageService(dataDir, objectMapper);
-        queryService = new RunQueryService(storageService);
+        GatewayContractCatalogService contractCatalogService =
+                new GatewayContractCatalogService(writeCatalog(contractDir));
+        queryService = new RunQueryService(storageService, contractCatalogService);
     }
 
     @Test
@@ -92,6 +98,55 @@ class RunQueryServiceTest {
     }
 
     @Test
+    void findAvailableApis_실행이력이없어도계약카탈로그의Api를반환한다() {
+        assertThat(queryService.findAvailableApis("orgB", "support"))
+                .containsExactly("createTicket", "listDevices");
+    }
+
+    @Test
+    void findAvailableApis_계약에없는케이스Api는제외한다() {
+        storageService.saveRun(TestRun.builder()
+                .id("support-run")
+                .org("orgB")
+                .service("support")
+                .source(TestSource.KARATE)
+                .startedAt(LocalDateTime.of(2026, 4, 3, 10, 0))
+                .durationMs(10)
+                .totalCount(1)
+                .passCount(1)
+                .failCount(0)
+                .reportPath("/reports/support-run/report/index.html")
+                .build());
+        storageService.saveCases("support-run", List.of(
+                TestCase.builder()
+                        .id("support-run-listDevices")
+                        .runId("support-run")
+                        .api("listDevices")
+                        .name("listDevices case")
+                        .endpoint("/cats/orgB/support/listDevices")
+                        .httpMethod("POST")
+                        .httpStatus(200)
+                        .status(TestStatus.PASS)
+                        .durationMs(1)
+                        .build(),
+                TestCase.builder()
+                        .id("support-run-listResources")
+                        .runId("support-run")
+                        .api("listResources")
+                        .name("listResources case")
+                        .endpoint("/cats/orgB/support/listResources")
+                        .httpMethod("POST")
+                        .httpStatus(200)
+                        .status(TestStatus.PASS)
+                        .durationMs(1)
+                        .build()
+        ));
+
+        assertThat(queryService.findAvailableApis("orgB", "support"))
+                .containsExactly("createTicket", "listDevices");
+    }
+
+    @Test
     void findAvailableHttpStatuses_케이스의HttpStatus를정렬해반환한다() {
         storageService.saveRun(run("full-run", null, 1, TestSource.CATS, 1, 1));
         storageService.saveCases("full-run", List.of(
@@ -131,5 +186,63 @@ class RunQueryServiceTest {
                 .status(status)
                 .durationMs(1)
                 .build();
+    }
+
+    private Path writeCatalog(Path baseDir) throws Exception {
+        Files.createDirectories(baseDir);
+        Files.writeString(baseDir.resolve("catalog.yaml"), """
+                version: 1
+                contracts:
+                  - id: gw-cats-booking
+                    org: catsOrg
+                    service: booking
+                    openapiPath: cats-gw-openapi.yaml
+                  - id: gw-orgb-support
+                    org: orgB
+                    service: support
+                    openapiPath: orgB-support-gw-openapi.yaml
+                """);
+        writeContract(baseDir.resolve("cats-gw-openapi.yaml"), "catsOrg", "booking",
+                List.of("createReservation", "getResourceDetail", "listResources"));
+        writeContract(baseDir.resolve("orgB-support-gw-openapi.yaml"), "orgB", "support",
+                List.of("listDevices", "createTicket"));
+        return baseDir.resolve("catalog.yaml");
+    }
+
+    private void writeContract(Path path, String org, String service, List<String> apis) throws Exception {
+        StringBuilder paths = new StringBuilder();
+        for (String api : apis) {
+            paths.append("""
+                      /cats/{org}/{service}/%s:
+                        post:
+                          operationId: %sViaGateway
+                    """.formatted(api, api));
+        }
+
+        Files.writeString(path, """
+                openapi: 3.0.3
+                info:
+                  title: %s %s Gateway API Contract
+                paths:
+                %s
+                components:
+                  parameters:
+                    Org:
+                      name: org
+                      in: path
+                      required: true
+                      schema:
+                        type: string
+                        enum: [%s]
+                      example: %s
+                    Service:
+                      name: service
+                      in: path
+                      required: true
+                      schema:
+                        type: string
+                        enum: [%s]
+                      example: %s
+                """.formatted(org, service, paths, org, org, service, service));
     }
 }

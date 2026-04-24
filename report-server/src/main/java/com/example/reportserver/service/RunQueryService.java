@@ -3,13 +3,16 @@ package com.example.reportserver.service;
 import com.example.reportserver.model.TestCase;
 import com.example.reportserver.model.TestRun;
 import com.example.reportserver.model.TestStatus;
+import com.example.reportserver.contract.GatewayContract;
 import com.example.reportserver.service.dto.RunFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 
 @Service
@@ -17,6 +20,7 @@ import java.util.TreeSet;
 public class RunQueryService {
 
     private final RunStorageService runStorageService;
+    private final GatewayContractCatalogService gatewayContractCatalogService;
 
     public List<TestRun> findRuns(RunFilter filter) {
         return runStorageService.listAllRuns().stream()
@@ -35,15 +39,22 @@ public class RunQueryService {
 
     public List<String> findAvailableApis(String org, String service) {
         TreeSet<String> apis = new TreeSet<>();
+        Set<String> declaredApis = gatewayContractCatalogService.findByOrgService(org, service)
+                .map(GatewayContract::getApis)
+                .map(HashSet::new)
+                .orElse(null);
+        if (declaredApis != null) {
+            apis.addAll(declaredApis);
+        }
         runStorageService.listAllRuns().stream()
                 .filter(r -> matches(org, r.getOrg()) && matches(service, r.getService()))
                 .forEach(run -> {
-                    if (hasValue(run.getApi())) {
+                    if (isAllowedApi(run.getApi(), declaredApis)) {
                         apis.add(run.getApi());
                     }
                     runStorageService.findCases(run.getId()).stream()
                             .map(TestCase::getApi)
-                            .filter(this::hasValue)
+                            .filter(api -> isAllowedApi(api, declaredApis))
                             .forEach(apis::add);
                 });
         return List.copyOf(apis);
@@ -106,5 +117,9 @@ public class RunQueryService {
 
     private boolean hasValue(String s) {
         return s != null && !s.isBlank();
+    }
+
+    private boolean isAllowedApi(String api, Set<String> declaredApis) {
+        return hasValue(api) && (declaredApis == null || declaredApis.contains(api));
     }
 }

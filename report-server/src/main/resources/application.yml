@@ -10,3 +10,4 @@ server:
 
 report:
   data-dir: ${REPORT_DATA_DIR:${user.dir}/data/runs}
+  gateway-contract-catalog-path: ${GATEWAY_CONTRACT_CATALOG_PATH:${user.dir}/../docs/openapi/gateway/catalog.yaml}

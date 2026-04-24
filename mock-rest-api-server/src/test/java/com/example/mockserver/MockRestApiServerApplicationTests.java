@@ -120,9 +120,9 @@ class MockRestApiServerApplicationTests {
     }
 
     @Test
-    void orgAServiceAReservationLifecycleShouldSucceed() throws Exception {
+    void orgAReservationLifecycleShouldSucceed() throws Exception {
         String reservationId = objectMapper.readTree(
-                mockMvc.perform(post("/cats/orgA/A/reservations")
+                mockMvc.perform(post("/cats/orgA/reservation/reservations")
                                 .contentType("application/json")
                                 .content("""
                                         {
@@ -140,12 +140,12 @@ class MockRestApiServerApplicationTests {
                         .getContentAsString()
         ).get("reservationId").asText();
 
-        mockMvc.perform(get("/cats/orgA/A/reservations/{reservationId}", reservationId))
+        mockMvc.perform(get("/cats/orgA/reservation/reservations/{reservationId}", reservationId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reservationId").value(reservationId))
                 .andExpect(jsonPath("$.status").value("CREATED"));
 
-        mockMvc.perform(post("/cats/orgA/A/reservations/{reservationId}/cancel", reservationId)
+        mockMvc.perform(post("/cats/orgA/reservation/reservations/{reservationId}/cancel", reservationId)
                         .contentType("application/json")
                         .content("""
                                 {

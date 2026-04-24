@@ -55,14 +55,14 @@ GET {{host}}/cats/{{org}}/{{service}}/reservations/{{reservationId}}
 Accept: application/json
 
 ###
-# orgA / A service sample
+# orgA / reservation service sample
 
 ### 9) orgA 자원 목록 조회
-GET {{host}}/cats/orgA/A/resources?page=0&size=20
+GET {{host}}/cats/orgA/reservation/resources?page=0&size=20
 Accept: application/json
 
 ### 10) orgA 예약 생성
-POST {{host}}/cats/orgA/A/reservations
+POST {{host}}/cats/orgA/reservation/reservations
 Content-Type: application/json
 Accept: application/json
 

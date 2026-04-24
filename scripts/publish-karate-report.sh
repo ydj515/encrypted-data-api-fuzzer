@@ -9,6 +9,9 @@ REPORT_DATA_DIR="${REPORT_DATA_DIR:-$ROOT_DIR/report-server/data/runs}"
 ORG="${ORG:-catsOrg}"
 SERVICE="${SERVICE:-booking}"
 API="${API:-}"
+DEFAULT_CONTRACT_PATH="$(bash "$SCRIPT_DIR/resolve-gw-contract.sh" "$ORG" "$SERVICE" path)"
+CONTRACT_PATH="${CONTRACT_PATH:-$DEFAULT_CONTRACT_PATH}"
+GATEWAY_CONTRACT_CATALOG_PATH="${GATEWAY_CONTRACT_CATALOG_PATH:-$ROOT_DIR/docs/openapi/gateway/catalog.yaml}"
 TEST_CASE_GRANULARITY="${TEST_CASE_GRANULARITY:-${CASE_GRANULARITY:-both}}"
 
 if [ -n "${KARATE_REPORT_DIR:-}" ]; then
@@ -37,13 +40,14 @@ fi
 
 export KARATE_REPORT_DIR="$REPORT_DIR"
 export REPORT_DATA_DIR
-export ORG
-export SERVICE
 export API
+export CONTRACT_PATH
+export GATEWAY_CONTRACT_CATALOG_PATH
 export TEST_CASE_GRANULARITY
 
 echo "Karate 리포트: $KARATE_REPORT_DIR"
 echo "저장소: $REPORT_DATA_DIR"
+echo "계약 파일: $CONTRACT_PATH"
 echo "케이스 단위: $TEST_CASE_GRANULARITY"
 
 if [ -n "${REPORT_PUBLISHER_JAR:-}" ]; then

@@ -1,6 +1,8 @@
 package com.example.reportserver.cli;
 
+import com.example.reportserver.contract.GatewayContract;
 import com.example.reportserver.parser.CatsReportParser;
+import com.example.reportserver.service.GatewayContractCatalogService;
 import com.example.reportserver.service.RunPublishService;
 import com.example.reportserver.service.RunStorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +19,7 @@ public final class CatsPublishCli {
 
     private static final String DEFAULT_REPORT_DIR = "../cats-report";
     private static final String DEFAULT_DATA_DIR = "data/runs";
+    private static final String DEFAULT_GATEWAY_CONTRACT_CATALOG_PATH = "../docs/openapi/gateway/catalog.yaml";
 
     private CatsPublishCli() {
     }
@@ -29,10 +32,18 @@ public final class CatsPublishCli {
         Path dataDir = Path.of(value(options, "data-dir", "REPORT_DATA_DIR", DEFAULT_DATA_DIR))
                 .toAbsolutePath()
                 .normalize();
-        String org = requiredValue(options, "org", "ORG");
-        String service = requiredValue(options, "service", "SERVICE");
         String api = blankToNull(value(options, "api", "API", null));
         String runId = blankToNull(value(options, "run-id", "RUN_ID", null));
+        String contractId = blankToNull(value(options, "contract-id", "CONTRACT_ID", null));
+        String contractPath = blankToNull(value(options, "contract-path", "CONTRACT_PATH", null));
+        Path catalogPath = Path.of(value(
+                        options,
+                        "contract-catalog-path",
+                        "GATEWAY_CONTRACT_CATALOG_PATH",
+                        DEFAULT_GATEWAY_CONTRACT_CATALOG_PATH
+                ))
+                .toAbsolutePath()
+                .normalize();
 
         ObjectMapper objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
@@ -41,11 +52,17 @@ public final class CatsPublishCli {
                 new CatsReportParser(objectMapper),
                 new RunStorageService(dataDir, objectMapper)
         );
+        GatewayContractCatalogService contractCatalogService = new GatewayContractCatalogService(catalogPath);
+        GatewayContract contract = contractCatalogService.resolveContract(contractId, contractPath)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "--contract-id/CONTRACT_ID or --contract-path/CONTRACT_PATH is required"
+                ));
 
-        String publishedRunId = publishService.publishCats(runId, reportDir, org, service, api);
+        String publishedRunId = publishService.publishCats(runId, reportDir, contract, api);
 
         System.out.println("CATS 리포트 발행 완료: " + publishedRunId);
         System.out.println("저장 위치: " + dataDir.resolve(publishedRunId));
+        System.out.println("계약 ID: " + (contract.getId() != null ? contract.getId() : "(unregistered)"));
     }
 
     private static Map<String, String> parseOptions(String[] args) {

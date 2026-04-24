@@ -1,0 +1,18 @@
+version: 1
+contracts:
+  - id: gw-cats-booking
+    org: catsOrg
+    service: booking
+    openapiPath: cats-gw-openapi.yaml
+  - id: gw-orga-reservation
+    org: orgA
+    service: reservation
+    openapiPath: orgA-reservation-gw-openapi.yaml
+  - id: gw-orgb-visit
+    org: orgB
+    service: visit
+    openapiPath: orgB-visit-gw-openapi.yaml
+  - id: gw-orgb-support
+    org: orgB
+    service: support
+    openapiPath: orgB-support-gw-openapi.yaml

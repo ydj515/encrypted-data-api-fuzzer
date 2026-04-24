@@ -1,10 +1,10 @@
-@service=A @api=listResources
-Feature: orgA A 자원 목록 조회
+@service=reservation @api=listResources
+Feature: orgA 예약 서비스 자원 목록 조회
 
   Background:
     * url gatewayUrl
     * def org = 'orgA'
-    * def service = 'A'
+    * def service = 'reservation'
     * def basePath = '/cats/' + org + '/' + service
 
   Scenario: 기본 목록 조회 성공
