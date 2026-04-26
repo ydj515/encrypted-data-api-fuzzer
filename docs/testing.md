@@ -125,23 +125,11 @@ FAIL_FAST=true ./scripts/run-tests-matrix.sh
 [SUMMARY] source=all org=all service=all api=ALL total=4 success=4 failure=0 status=PASS fail_fast=false services=catsOrg/booking:PASS,orgA/reservation:PASS,orgB/visit:PASS,orgB/support:PASS
 ```
 
-## OpenAPI 기반 Karate 생성 규칙
+## OpenAPI 기반 Karate 생성
 
-단건 API feature는 `docs/openapi/mock-rest-api-server/*.yaml`의 request schema를 우선 기준으로 생성합니다. Gateway 테스트는 plain REST path를 직접 호출하지 않고 `/cats/{org}/{service}/{apiName}` 형태의 action path를 POST로 호출하며, plain path parameter는 JSON request body field로 넣습니다.
+Karate feature 생성 규칙, 단건 API/시나리오 기반 생성 방식, Swagger 기준 negative case 규칙은 [karate-generation.md](karate-generation.md)를 기준으로 관리합니다.
 
-Negative case 생성 규칙은 아래 순서를 따릅니다.
-
-| 기준 | 생성 규칙 |
-|---|---|
-| `required` | 필수 필드마다 하나씩 누락 요청을 만들고 `400`을 기대합니다. |
-| `enum` | request field에 `enum`이 있을 때 허용값 밖의 값을 넣고 `400`을 기대합니다. response-only enum은 negative 요청 근거로 쓰지 않습니다. |
-| `format: date` | `not-a-date`를 넣고 `400`을 기대합니다. |
-| `format: date-time` | `not-a-date-time`을 넣고 `400`을 기대합니다. |
-| `minimum` / `maximum` | `minimum - 1`, `maximum + 1` 값을 각각 넣고 `400`을 기대합니다. |
-
-각 negative scenario는 한 번에 하나의 조건만 깨뜨립니다. 나머지 필드는 정상값을 유지해야 리포트에서 실패 원인이 명확해집니다.
-
-테스트케이스 생성의 기준은 Swagger/OpenAPI 문서입니다. mock 구현 코드, 임시 seed 데이터, controller/service 내부 검증 로직은 생성 규칙의 근거로 사용하지 않습니다. API 동작과 Swagger가 다르면 Swagger를 우선 수정해 REST API spec과 싱크를 맞춘 뒤 테스트를 생성합니다.
+CATS 리포트 해석과 smoke/full 실행 모드 상세 설명은 [cats-report-guide.md](cats-report-guide.md)에 분리되어 있습니다.
 
 ## 리포트 경로 정리
 

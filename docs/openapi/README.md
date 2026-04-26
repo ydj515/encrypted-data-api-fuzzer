@@ -7,3 +7,8 @@
 - `mock-rest-api-server/`
   - mock REST API 서버 직접 호출용 계약 파일
   - 예: `orgA-reservation-plain-api.yaml`, `orgB-visit-plain-api.yaml`
+
+## Related Documents
+
+- OpenAPI 기반 Karate feature 생성 규칙: [../karate-generation.md](../karate-generation.md)
+- 테스트 실행과 리포트 발행 방법: [../testing.md](../testing.md)
