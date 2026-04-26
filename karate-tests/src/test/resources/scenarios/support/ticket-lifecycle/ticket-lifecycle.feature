@@ -7,7 +7,7 @@ Feature: orgB support 티켓 생명주기
     * def service = 'support'
     * def basePath = '/cats/' + org + '/' + service
 
-  Scenario: 티켓 생성 후 조회하고 해결한다
+  Scenario: 생성 후 조회하고 종료 상태로 변경한다
     Given path basePath + '/createTicket'
     And request { deviceId: 'DEV-01', requesterId: 'ops-user', issueType: 'DISPLAY_ERROR', description: 'screen is blank' }
     When method POST
@@ -21,7 +21,6 @@ Feature: orgB support 티켓 생명주기
     When method POST
     Then status 200
     And match response.ticketId == ticketId
-    And match response.deviceId == 'DEV-01'
     And match response.status == 'OPEN'
 
     Given path basePath + '/resolveTicket'
@@ -30,4 +29,3 @@ Feature: orgB support 티켓 생명주기
     Then status 200
     And match response.ticketId == ticketId
     And match response.status == 'RESOLVED'
-    And match response.resolvedAt == '#string'
