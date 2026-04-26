@@ -72,6 +72,8 @@ SAMPLE_VALUES = {
 STABLE_ID_FIELDS = {"resourceId", "scheduleId", "deviceId", "siteId", "userId", "requesterId"}
 CREATE_API_PREFIXES = ("create", "register", "issue", "open", "submit")
 TERMINAL_API_PREFIXES = ("cancel", "resolve", "delete", "close", "complete")
+# 생성된 feature가 과도하게 길어지지 않도록 기본 응답 검증 필드 수를 제한한다.
+MAX_RESPONSE_ASSERTION_FIELDS = 8
 
 LIFECYCLES = {
     "reservation": {
@@ -160,7 +162,19 @@ def resolve_ref(spec: dict[str, Any], value: Any) -> Any:
         raise SystemExit(f"외부 $ref는 지원하지 않습니다: {ref}")
     current: Any = spec
     for part in ref[2:].split("/"):
-        current = current[part]
+        decoded_part = part.replace("~1", "/").replace("~0", "~")
+        if isinstance(current, dict):
+            if decoded_part not in current:
+                raise SystemExit(f"잘못된 내부 $ref 경로입니다: {ref} (누락된 키: {decoded_part})")
+            current = current[decoded_part]
+            continue
+        if isinstance(current, list):
+            try:
+                current = current[int(decoded_part)]
+            except (ValueError, IndexError) as exc:
+                raise SystemExit(f"잘못된 내부 $ref 경로입니다: {ref} (잘못된 배열 인덱스: {decoded_part})") from exc
+            continue
+        raise SystemExit(f"잘못된 내부 $ref 경로입니다: {ref} ({decoded_part} 탐색 불가)")
     return resolve_ref(spec, current)
 
 
@@ -240,7 +254,7 @@ def request_body_schema(spec: dict[str, Any], operation: dict[str, Any]) -> dict
 
 def response_schema(spec: dict[str, Any], operation: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     responses = operation.get("responses", {})
-    for code in sorted(responses):
+    for code in sorted(responses, key=str):
         if not str(code).startswith("2"):
             continue
         response = resolve_ref(spec, responses[code])
@@ -352,6 +366,8 @@ def kebab(value: str) -> str:
 
 
 def karate_value(value: Any) -> str:
+    if value is None:
+        return "null"
     if isinstance(value, (dt.datetime, dt.date)):
         return "'" + value.isoformat() + "'"
     if isinstance(value, bool):
@@ -470,7 +486,7 @@ def response_match_lines(
     required = list(schema.get("required", []))
     names = required or list(properties.keys())
     lines = []
-    for name in names[:8]:
+    for name in names[:MAX_RESPONSE_ASSERTION_FIELDS]:
         if name in expected_values:
             lines.append(f"{indent}And match response.{name} == {expected_values[name]}")
             continue

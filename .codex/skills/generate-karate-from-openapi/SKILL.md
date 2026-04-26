@@ -5,6 +5,8 @@ description: Generate Karate feature tests for this api-test-orchestrator worksp
 
 # Generate Karate From OpenAPI
 
+> **싱크 안내:** 이 파일을 수정한 후에는 `docs/skills/generate-karate-from-openapi/SKILL-SYNC.md`를 참조하여 `.claude/skills/generate-karate-from-openapi/`의 대응 항목도 함께 업데이트하세요.
+
 ## Overview
 
 Create Karate tests from mock REST OpenAPI specs while preserving this repository's conventions: gateway-style POST calls, `@service` and `@api` tags, and files under `karate-tests/src/test/resources/scenarios`.
@@ -96,7 +98,7 @@ For single API tests, the script can add setup and cleanup calls when a required
 Run the skill validator after changing this skill:
 
 ```bash
-python3 /Users/dongjin/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" \
   .codex/skills/generate-karate-from-openapi
 ```
 
