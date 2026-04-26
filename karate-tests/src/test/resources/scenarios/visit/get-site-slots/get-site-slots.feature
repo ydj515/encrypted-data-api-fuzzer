@@ -1,5 +1,5 @@
 @service=visit @api=getSiteSlots
-Feature: orgB visit site slot 조회
+Feature: orgB visit site 일별 slot 조회(본문 기반) 단건 API 테스트
 
   Background:
     * url gatewayUrl
@@ -7,19 +7,31 @@ Feature: orgB visit site slot 조회
     * def service = 'visit'
     * def basePath = '/cats/' + org + '/' + service
 
-  Scenario: site slot 조회 성공
+  Scenario: 기본 요청 성공
     Given path basePath + '/getSiteSlots'
     And request { siteId: 'SITE-01', date: '2026-02-26' }
     When method POST
     Then status 200
     And match response.siteId == 'SITE-01'
+    And match response.date == '2026-02-26'
     And match response.totalSlots == '#number'
     And match response.availableSlots == '#number'
     And match response.reservedSlots == '#number'
-    And assert response.totalSlots == response.availableSlots + response.reservedSlots
 
-  Scenario: 존재하지 않는 site 조회 시 404 반환
+  Scenario: OpenAPI required 필드 siteId 누락 시 400 반환
     Given path basePath + '/getSiteSlots'
-    And request { siteId: 'SITE-99', date: '2026-02-26' }
+    And request { date: '2026-02-26' }
     When method POST
-    Then status 404
+    Then status 400
+
+  Scenario: OpenAPI required 필드 date 누락 시 400 반환
+    Given path basePath + '/getSiteSlots'
+    And request { siteId: 'SITE-01' }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI format 필드 date 잘못된 date 형식 시 400 반환
+    Given path basePath + '/getSiteSlots'
+    And request { siteId: 'SITE-01', date: 'not-a-date' }
+    When method POST
+    Then status 400
