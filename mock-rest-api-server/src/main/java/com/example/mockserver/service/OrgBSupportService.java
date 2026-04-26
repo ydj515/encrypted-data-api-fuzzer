@@ -8,7 +8,10 @@ import org.springframework.stereotype.Service;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -16,6 +19,8 @@ public class OrgBSupportService {
 
     private static final int MAX_PAGE_SIZE = 50;
     private static final int MAX_PAGE_NUMBER = 1_000;
+    private static final Set<String> ALLOWED_DEVICE_STATUSES = Set.of("ACTIVE", "MAINTENANCE");
+    private static final Set<String> ALLOWED_ISSUE_TYPES = Set.of("DISPLAY_ERROR", "DEVICE_OFFLINE", "ACCESS_ISSUE");
 
     private final Map<String, OrgBSupportServiceDtos.DeviceSummary> devices = new ConcurrentHashMap<>();
     private final Map<String, SupportTicketEntity> tickets = new ConcurrentHashMap<>();
@@ -26,6 +31,7 @@ public class OrgBSupportService {
 
     public OrgBSupportServiceDtos.DeviceListResponse listDevices(int page, int size, String status) {
         validatePageRequest(page, size);
+        validateDeviceStatus(status);
 
         List<OrgBSupportServiceDtos.DeviceSummary> filtered = devices.values().stream()
                 .filter(device -> status == null || status.isBlank() || device.status().equalsIgnoreCase(status))
@@ -42,7 +48,7 @@ public class OrgBSupportService {
         validateCreateRequest(request);
         getDevice(request.deviceId());
 
-        String ticketId = "TCK-" + System.currentTimeMillis();
+        String ticketId = "TCK-" + UUID.randomUUID();
         OffsetDateTime now = OffsetDateTime.now();
         tickets.put(ticketId, new SupportTicketEntity(
                 ticketId,
@@ -112,8 +118,17 @@ public class OrgBSupportService {
         if (isBlank(request.deviceId()) || isBlank(request.requesterId()) || isBlank(request.issueType())) {
             throw new ApiException("INVALID_REQUEST", "deviceId, requesterId, issueType are required", HttpStatus.BAD_REQUEST.value());
         }
+        if (!ALLOWED_ISSUE_TYPES.contains(request.issueType())) {
+            throw new ApiException("INVALID_REQUEST", "issueType must be one of " + ALLOWED_ISSUE_TYPES, HttpStatus.BAD_REQUEST.value());
+        }
         if (isBlank(request.description())) {
             throw new ApiException("INVALID_REQUEST", "description is required", HttpStatus.BAD_REQUEST.value());
+        }
+    }
+
+    private void validateDeviceStatus(String status) {
+        if (status != null && !status.isBlank() && !ALLOWED_DEVICE_STATUSES.contains(status.toUpperCase(Locale.ROOT))) {
+            throw new ApiException("INVALID_REQUEST", "status must be one of " + ALLOWED_DEVICE_STATUSES, HttpStatus.BAD_REQUEST.value());
         }
     }
 

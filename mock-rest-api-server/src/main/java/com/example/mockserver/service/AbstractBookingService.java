@@ -10,7 +10,10 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractBookingService {
@@ -19,6 +22,7 @@ public abstract class AbstractBookingService {
     private static final int MIN_SCHEDULE_ITEMS = 10;
     private static final int MAX_PAGE_SIZE = 100;
     private static final int MAX_PAGE_NUMBER = 10_000;
+    private static final Set<String> ALLOWED_RESOURCE_CATEGORIES = Set.of("SPACE", "STUDIO", "EQUIPMENT");
 
     private final Map<String, BookingDomainModels.ResourceDetail> resources = new ConcurrentHashMap<>();
     private final Map<String, ReservationEntity> reservations = new ConcurrentHashMap<>();
@@ -28,7 +32,7 @@ public abstract class AbstractBookingService {
     }
 
     protected BookingDomainModels.ResourceListResponse listResourcesModel(int page, int size, String category) {
-        validateListResourcesRequest(page, size);
+        validateListResourcesRequest(page, size, category);
 
         List<BookingDomainModels.ResourceSummary> filtered = resources.values().stream()
                 .filter(v -> category == null || category.isBlank() || v.category().equalsIgnoreCase(category))
@@ -114,7 +118,7 @@ public abstract class AbstractBookingService {
             throw new ApiException("RESERVATION_CONFLICT", "Insufficient inventory", HttpStatus.CONFLICT.value());
         }
 
-        String reservationId = "RSV-" + System.currentTimeMillis();
+        String reservationId = "RSV-" + UUID.randomUUID();
         OffsetDateTime now = OffsetDateTime.now();
         reservations.put(reservationId, new ReservationEntity(
                 reservationId,
@@ -182,12 +186,15 @@ public abstract class AbstractBookingService {
         return value == null || value.isBlank();
     }
 
-    private void validateListResourcesRequest(int page, int size) {
+    private void validateListResourcesRequest(int page, int size, String category) {
         if (page < 0 || page > MAX_PAGE_NUMBER) {
             throw new ApiException("INVALID_REQUEST", "page must be between 0 and " + MAX_PAGE_NUMBER, HttpStatus.BAD_REQUEST.value());
         }
         if (size < 1 || size > MAX_PAGE_SIZE) {
             throw new ApiException("INVALID_REQUEST", "size must be between 1 and " + MAX_PAGE_SIZE, HttpStatus.BAD_REQUEST.value());
+        }
+        if (category != null && !category.isBlank() && !ALLOWED_RESOURCE_CATEGORIES.contains(category.toUpperCase(Locale.ROOT))) {
+            throw new ApiException("INVALID_REQUEST", "category must be one of " + ALLOWED_RESOURCE_CATEGORIES, HttpStatus.BAD_REQUEST.value());
         }
     }
 

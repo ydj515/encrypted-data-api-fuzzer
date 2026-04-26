@@ -10,6 +10,8 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -18,6 +20,8 @@ public class OrgBVisitService {
     private static final int MAX_PAGE_SIZE = 50;
     private static final int MAX_PAGE_NUMBER = 1_000;
     private static final int TOTAL_DAILY_SLOTS = 20;
+    private static final Set<String> ALLOWED_CITIES = Set.of("Seoul", "Busan", "Daejeon");
+    private static final Set<String> ALLOWED_VISIT_PURPOSES = Set.of("demo", "business", "audit");
 
     private final Map<String, OrgBVisitServiceDtos.SiteSummary> sites = new ConcurrentHashMap<>();
     private final Map<String, VisitEntity> visits = new ConcurrentHashMap<>();
@@ -28,6 +32,7 @@ public class OrgBVisitService {
 
     public OrgBVisitServiceDtos.SiteListResponse listSites(int page, int size, String city) {
         validatePageRequest(page, size);
+        validateCity(city);
 
         List<OrgBVisitServiceDtos.SiteSummary> filtered = sites.values().stream()
                 .filter(site -> city == null || city.isBlank() || site.city().equalsIgnoreCase(city))
@@ -63,7 +68,7 @@ public class OrgBVisitService {
             throw new ApiException("VISIT_CONFLICT", "Insufficient visit slots", HttpStatus.CONFLICT.value());
         }
 
-        String visitId = "VIS-" + System.currentTimeMillis();
+        String visitId = "VIS-" + UUID.randomUUID();
         OffsetDateTime now = OffsetDateTime.now();
         visits.put(visitId, new VisitEntity(
                 visitId,
@@ -137,6 +142,15 @@ public class OrgBVisitService {
         }
         if (request.partySize() == null || request.partySize() < 1 || request.partySize() > 8) {
             throw new ApiException("INVALID_REQUEST", "partySize must be 1..8", HttpStatus.BAD_REQUEST.value());
+        }
+        if (!isBlank(request.purpose()) && !ALLOWED_VISIT_PURPOSES.contains(request.purpose())) {
+            throw new ApiException("INVALID_REQUEST", "purpose must be one of " + ALLOWED_VISIT_PURPOSES, HttpStatus.BAD_REQUEST.value());
+        }
+    }
+
+    private void validateCity(String city) {
+        if (city != null && !city.isBlank() && ALLOWED_CITIES.stream().noneMatch(value -> value.equalsIgnoreCase(city))) {
+            throw new ApiException("INVALID_REQUEST", "city must be one of " + ALLOWED_CITIES, HttpStatus.BAD_REQUEST.value());
         }
     }
 
