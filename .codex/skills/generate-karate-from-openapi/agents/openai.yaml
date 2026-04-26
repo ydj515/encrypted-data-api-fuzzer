@@ -1,0 +1,4 @@
+interface:
+  display_name: "Generate Karate From OpenAPI"
+  short_description: "Swagger만 기준으로 Karate 테스트 생성"
+  default_prompt: "Use $generate-karate-from-openapi to create single API or data-flow scenario Karate tests strictly from OpenAPI/Swagger specs."
