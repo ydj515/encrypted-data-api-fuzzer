@@ -102,7 +102,7 @@ paths:
             examples:
               default:
                 value:
-                  ticketId: TCK-1700000000000
+                  ticketId: TCK-550e8400-e29b-41d4-a716-446655440001
       responses:
         "200":
           description: 성공
@@ -134,7 +134,7 @@ paths:
             examples:
               default:
                 value:
-                  ticketId: TCK-1700000000000
+                  ticketId: TCK-550e8400-e29b-41d4-a716-446655440001
                   resolutionNote: restarted device
       responses:
         "200":
@@ -205,6 +205,8 @@ components:
           default: 20
         status:
           type: string
+          enum: [ACTIVE, MAINTENANCE]
+          example: ACTIVE
 
     SupportTicketCreateRequest:
       type: object
@@ -213,12 +215,17 @@ components:
         deviceId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: DEV-01
         requesterId:
           type: string
+          example: ops-user
         issueType:
           type: string
+          enum: [DISPLAY_ERROR, DEVICE_OFFLINE, ACCESS_ISSUE]
+          example: DISPLAY_ERROR
         description:
           type: string
+          example: screen is blank
 
     SupportTicketDetailRequest:
       type: object
@@ -227,6 +234,7 @@ components:
         ticketId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: TCK-550e8400-e29b-41d4-a716-446655440001
 
     SupportResolveRequest:
       type: object
@@ -235,9 +243,11 @@ components:
         ticketId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: TCK-550e8400-e29b-41d4-a716-446655440001
         resolutionNote:
           type: string
           minLength: 1
+          example: restarted device
           maxLength: 500
 
     DeviceListResponse:

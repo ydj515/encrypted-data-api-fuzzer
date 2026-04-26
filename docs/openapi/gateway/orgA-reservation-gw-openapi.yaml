@@ -237,7 +237,7 @@ paths:
             examples:
               default:
                 value:
-                  reservationId: RSV-1700000000000
+                  reservationId: RSV-550e8400-e29b-41d4-a716-446655440000
                   reason: user requested
       responses:
         "200":
@@ -270,7 +270,7 @@ paths:
             examples:
               default:
                 value:
-                  reservationId: RSV-1700000000000
+                  reservationId: RSV-550e8400-e29b-41d4-a716-446655440000
       responses:
         "200":
           description: 성공
@@ -346,6 +346,8 @@ components:
           default: 20
         category:
           type: string
+          enum: [SPACE, STUDIO, EQUIPMENT]
+          example: SPACE
 
     ResourceDetailRequest:
       type: object
@@ -354,6 +356,7 @@ components:
         resourceId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: R-001
 
     InventoryRequest:
       type: object
@@ -362,9 +365,11 @@ components:
         resourceId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: R-001
         date:
           type: string
           format: date
+          example: '2026-02-26'
 
     ScheduleRangeRequest:
       type: object
@@ -373,12 +378,15 @@ components:
         resourceId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: R-001
         from:
           type: string
           format: date-time
+          example: '2026-02-26T09:00:00+09:00'
         to:
           type: string
           format: date-time
+          example: '2026-02-26T18:00:00+09:00'
 
     DailyScheduleRequest:
       type: object
@@ -387,6 +395,7 @@ components:
         date:
           type: string
           format: date
+          example: '2026-02-26'
 
     ReservationCreateRequest:
       type: object
@@ -395,17 +404,22 @@ components:
         resourceId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: R-001
         scheduleId:
           type: string
+          example: R-001-2026-02-26-9
         userId:
           type: string
+          example: user-karate-001
         quantity:
           type: integer
           minimum: 1
           maximum: 9999
+          example: 1
         memo:
           type: string
           maxLength: 500
+          example: karate generated test
 
     ReservationCancelRequest:
       type: object
@@ -414,10 +428,12 @@ components:
         reservationId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: RSV-550e8400-e29b-41d4-a716-446655440000
         reason:
           type: string
           minLength: 1
           maxLength: 200
+          example: karate generated teardown
 
     ReservationDetailRequest:
       type: object
@@ -426,6 +442,7 @@ components:
         reservationId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: RSV-550e8400-e29b-41d4-a716-446655440000
 
     ResourceListResponse:
       type: object

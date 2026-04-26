@@ -139,7 +139,7 @@ paths:
             examples:
               default:
                 value:
-                  visitId: VIS-1700000000000
+                  visitId: VIS-550e8400-e29b-41d4-a716-446655440002
       responses:
         "200":
           description: 성공
@@ -171,7 +171,7 @@ paths:
             examples:
               default:
                 value:
-                  visitId: VIS-1700000000000
+                  visitId: VIS-550e8400-e29b-41d4-a716-446655440002
                   reason: schedule changed
       responses:
         "200":
@@ -248,6 +248,8 @@ components:
           default: 20
         city:
           type: string
+          enum: [Seoul, Busan, Daejeon]
+          example: Seoul
 
     VisitSlotRequest:
       type: object
@@ -256,9 +258,11 @@ components:
         siteId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: SITE-01
         date:
           type: string
           format: date
+          example: '2026-02-26'
 
     VisitCreateRequest:
       type: object
@@ -267,19 +271,26 @@ components:
         siteId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: SITE-01
         visitDate:
           type: string
           format: date
+          example: '2026-02-26'
         visitorName:
           type: string
+          example: Kim Visitor
         visitorPhone:
           type: string
+          example: 010-1234-5678
         partySize:
           type: integer
           minimum: 1
           maximum: 8
+          example: 2
         purpose:
           type: string
+          enum: [demo, business, audit]
+          example: demo
 
     VisitDetailRequest:
       type: object
@@ -288,6 +299,7 @@ components:
         visitId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: VIS-550e8400-e29b-41d4-a716-446655440002
 
     VisitCancelRequest:
       type: object
@@ -296,10 +308,12 @@ components:
         visitId:
           type: string
           pattern: '^[A-Za-z0-9._-]{1,100}$'
+          example: VIS-550e8400-e29b-41d4-a716-446655440002
         reason:
           type: string
           minLength: 1
           maxLength: 200
+          example: karate generated teardown
 
     SiteListResponse:
       type: object

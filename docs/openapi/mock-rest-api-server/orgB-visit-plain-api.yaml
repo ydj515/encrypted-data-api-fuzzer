@@ -37,6 +37,8 @@ paths:
           required: false
           schema:
             type: string
+            enum: [Seoul, Busan, Daejeon]
+          example: Seoul
       responses:
         "200":
           description: 성공
@@ -217,7 +219,7 @@ components:
       required: true
       schema:
         type: string
-      example: VIS-1700000000000
+      example: VIS-550e8400-e29b-41d4-a716-446655440002
 
   responses:
     BadRequest:
@@ -245,12 +247,18 @@ components:
       properties:
         page:
           type: integer
+          minimum: 0
+          maximum: 1000
           default: 0
         size:
           type: integer
+          minimum: 1
+          maximum: 50
           default: 20
         city:
           type: string
+          enum: [Seoul, Busan, Daejeon]
+          example: Seoul
 
     VisitSlotRequest:
       type: object
@@ -259,6 +267,7 @@ components:
         date:
           type: string
           format: date
+          example: '2026-02-26'
 
     IgnoredRequestBody:
       type: object
@@ -315,19 +324,26 @@ components:
       properties:
         siteId:
           type: string
+          example: SITE-01
         visitDate:
           type: string
           format: date
+          example: '2026-02-26'
         visitorName:
           type: string
+          example: Kim Visitor
         visitorPhone:
           type: string
+          example: 010-1234-5678
         partySize:
           type: integer
           minimum: 1
           maximum: 8
+          example: 2
         purpose:
           type: string
+          enum: [demo, business, audit]
+          example: demo
 
     VisitCreateResponse:
       type: object
@@ -348,6 +364,7 @@ components:
       properties:
         reason:
           type: string
+          example: karate generated teardown
 
     VisitCancelResponse:
       type: object
