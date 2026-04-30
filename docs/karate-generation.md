@@ -12,10 +12,10 @@ docs/openapi/mock-rest-api-server/*.yaml
 
 mock 구현 코드, 임시 seed 데이터, controller/service 내부 검증 로직은 테스트 입력값이나 negative rule의 근거로 사용하지 않습니다. API 동작과 Swagger가 다르면 Swagger를 먼저 수정해 현재 REST API spec과 싱크를 맞춘 뒤 테스트를 생성합니다.
 
-생성 스킬은 이 워크스페이스의 `.codex/skills/generate-karate-from-openapi`에 있습니다.
+생성 스킬의 정식 위치는 이 워크스페이스의 `.agents/skills/generate-karate-from-openapi`입니다. Claude Code용 동기화 사본은 `.claude/skills/generate-karate-from-openapi`에 유지합니다.
 
 ```bash
-python3 .codex/skills/generate-karate-from-openapi/scripts/generate_karate_features.py \
+python3 .agents/skills/generate-karate-from-openapi/scripts/generate_karate_features.py \
   --openapi docs/openapi/mock-rest-api-server/orgB-visit-plain-api.yaml \
   --mode api \
   --overwrite
@@ -26,6 +26,8 @@ python3 .codex/skills/generate-karate-from-openapi/scripts/generate_karate_featu
 ```text
 karate-tests/src/test/resources/scenarios/
 ```
+
+스킬 평가용 프롬프트 초안은 `.agents/skills/generate-karate-from-openapi/evals/evals.json`에서 관리합니다.
 
 ## 생성 모드
 
@@ -43,7 +45,7 @@ karate-tests/src/test/resources/scenarios/
 대표 실행:
 
 ```bash
-python3 .codex/skills/generate-karate-from-openapi/scripts/generate_karate_features.py \
+python3 .agents/skills/generate-karate-from-openapi/scripts/generate_karate_features.py \
   --openapi docs/openapi/mock-rest-api-server/orgB-support-plain-api.yaml \
   --mode api \
   --api listDevices \
@@ -53,7 +55,7 @@ python3 .codex/skills/generate-karate-from-openapi/scripts/generate_karate_featu
 기존에 없는 단건 API feature만 보강할 때는 `--skip-existing`을 사용합니다.
 
 ```bash
-python3 .codex/skills/generate-karate-from-openapi/scripts/generate_karate_features.py \
+python3 .agents/skills/generate-karate-from-openapi/scripts/generate_karate_features.py \
   --openapi docs/openapi/mock-rest-api-server/orgB-support-plain-api.yaml \
   --mode api \
   --skip-existing
@@ -66,7 +68,7 @@ python3 .codex/skills/generate-karate-from-openapi/scripts/generate_karate_featu
 먼저 `--mode graph`로 응답 필드와 요청 필드의 연결 후보를 확인합니다.
 
 ```bash
-python3 .codex/skills/generate-karate-from-openapi/scripts/generate_karate_features.py \
+python3 .agents/skills/generate-karate-from-openapi/scripts/generate_karate_features.py \
   --openapi docs/openapi/mock-rest-api-server/orgB-visit-plain-api.yaml \
   --mode graph
 ```

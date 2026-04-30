@@ -1,0 +1,44 @@
+{
+  "skill_name": "generate-karate-from-openapi",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "docs/openapi/mock-rest-api-server/orgB-support-plain-api.yaml 문서만 기준으로 support 서비스의 `listDevices` 단일 API Karate feature를 생성하거나 업데이트해줘. gateway action path 규칙과 기존 scenarios 디렉터리 구조를 지키고, 성공 케이스와 OpenAPI 요청 제약에서 파생되는 negative case를 포함해.",
+      "expected_output": "support/list-devices 경로에 맞는 단일 API feature가 생성되며, `@service`/`@api` 태그, gateway POST 호출, 성공 시나리오, 요청 제약 기반 negative case가 포함된다.",
+      "files": [
+        "../../../docs/openapi/mock-rest-api-server/orgB-support-plain-api.yaml"
+      ],
+      "assertions": [
+        "생성된 feature가 `karate-tests/src/test/resources/scenarios/support/` 하위 규칙을 따른다.",
+        "Gateway action path와 POST 요청 바디 규칙을 사용한다.",
+        "성공 시나리오와 OpenAPI 제약 기반 negative case가 함께 포함된다."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "docs/openapi/mock-rest-api-server/orgB-visit-plain-api.yaml 하나만 보고 response-to-request 데이터 흐름을 찾아 visit 서비스용 시나리오 Karate feature를 설계해줘. 다른 Swagger 문서나 다른 서비스는 섞지 말고, 응답값 캡처와 `#(...)` 재사용이 명확한 흐름만 선택해.",
+      "expected_output": "visit 서비스 범위 안에서만 동작하는 시나리오 feature가 생성되며, 이전 응답 값을 `* def`로 캡처하고 이후 요청에서 `#(...)`으로 재사용한다.",
+      "files": [
+        "../../../docs/openapi/mock-rest-api-server/orgB-visit-plain-api.yaml"
+      ],
+      "assertions": [
+        "하나의 OpenAPI 문서와 하나의 service 범위만 사용한다.",
+        "시나리오에서 응답 값을 캡처하고 이후 요청에 재사용한다.",
+        "다른 Swagger 문서나 다른 service의 API 체인을 만들지 않는다."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "docs/openapi/mock-rest-api-server/orgA-reservation-plain-api.yaml 기준으로 `createReservation` 단일 API 테스트를 보강해줘. 필수 필드 누락, enum/format/range 제약이 있으면 400 negative case를 추가하고, setup/cleanup이 필요하면 대상 API가 단일 테스트라는 점이 드러나게 구성해줘.",
+      "expected_output": "reservation 서비스의 createReservation feature가 단일 API 테스트 형태를 유지하면서, 필요한 setup/cleanup과 Swagger 제약 기반 negative case를 포함한다.",
+      "files": [
+        "../../../docs/openapi/mock-rest-api-server/orgA-reservation-plain-api.yaml"
+      ],
+      "assertions": [
+        "대상 API가 `createReservation`인 단일 API 테스트 구조를 유지한다.",
+        "필수 필드 누락 또는 enum/format/range 제약에서 파생된 400 negative case가 추가된다.",
+        "setup/cleanup 호출이 있더라도 보조 역할로만 사용된다."
+      ]
+    }
+  ]
+}
