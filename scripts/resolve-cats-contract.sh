@@ -4,8 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-ORG="${1:-${ORG:-catsOrg}}"
-SERVICE="${2:-${SERVICE:-booking}}"
+ORG="${1:-${ORG:-orgA}}"
+SERVICE="${2:-${SERVICE:-reservation}}"
 PROFILE="${3:-${CATS_PROFILE:-full}}"
 base_contract="$(bash "$SCRIPT_DIR/resolve-gw-contract.sh" "$ORG" "$SERVICE" path)"
 

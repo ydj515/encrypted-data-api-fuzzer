@@ -6,8 +6,8 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 KARATE_REPORTS_BASE="$ROOT_DIR/karate-tests/build/karate-reports"
 REPORT_DATA_DIR="${REPORT_DATA_DIR:-$ROOT_DIR/report-server/data/runs}"
-ORG="${ORG:-catsOrg}"
-SERVICE="${SERVICE:-booking}"
+ORG="${ORG:-orgA}"
+SERVICE="${SERVICE:-reservation}"
 API="${API:-}"
 DEFAULT_CONTRACT_PATH="$(bash "$SCRIPT_DIR/resolve-gw-contract.sh" "$ORG" "$SERVICE" path)"
 CONTRACT_PATH="${CONTRACT_PATH:-$DEFAULT_CONTRACT_PATH}"
@@ -17,19 +17,31 @@ TEST_CASE_GRANULARITY="${TEST_CASE_GRANULARITY:-${CASE_GRANULARITY:-both}}"
 if [ -n "${KARATE_REPORT_DIR:-}" ]; then
   REPORT_DIR="$KARATE_REPORT_DIR"
 else
-  # Karate의 현재 실행 결과 디렉토리를 우선 사용하고, 없으면 수정 시각이 가장 최신인 백업 디렉토리를 사용한다.
-  FIXED_REPORT_DIR="$KARATE_REPORTS_BASE/karate-reports"
-  if [ -d "$FIXED_REPORT_DIR" ]; then
-    REPORT_DIR="$FIXED_REPORT_DIR"
-  else
-    shopt -s nullglob
-    CANDIDATES=("$KARATE_REPORTS_BASE"/karate-reports*)
-    shopt -u nullglob
-    if [ "${#CANDIDATES[@]}" -eq 0 ]; then
-      echo "ERROR: Karate 리포트를 찾을 수 없습니다: $KARATE_REPORTS_BASE" >&2
-      exit 1
+  # 최신 실행 결과 중 실제 케이스 JSON이 존재하는 디렉토리를 우선 사용한다.
+  shopt -s nullglob
+  CANDIDATES=("$KARATE_REPORTS_BASE"/karate-reports*)
+  shopt -u nullglob
+  if [ "${#CANDIDATES[@]}" -eq 0 ]; then
+    echo "ERROR: Karate 리포트를 찾을 수 없습니다: $KARATE_REPORTS_BASE" >&2
+    exit 1
+  fi
+
+  REPORT_DIR=""
+  while IFS= read -r candidate; do
+    if [ -f "$candidate/karate-summary-json.txt" ] && find "$candidate" -maxdepth 1 -name '*.karate-json.txt' -print -quit | grep -q .; then
+      REPORT_DIR="$candidate"
+      break
     fi
-    REPORT_DIR="$(ls -td "${CANDIDATES[@]}" | head -n 1)"
+  done < <(ls -td "${CANDIDATES[@]}")
+
+  # 단건/실패 실행 등으로 케이스 JSON이 없을 수도 있으므로 마지막으로 summary만 있는 최신 디렉토리로 fallback 한다.
+  if [ -z "$REPORT_DIR" ]; then
+    while IFS= read -r candidate; do
+      if [ -f "$candidate/karate-summary-json.txt" ]; then
+        REPORT_DIR="$candidate"
+        break
+      fi
+    done < <(ls -td "${CANDIDATES[@]}")
   fi
 fi
 

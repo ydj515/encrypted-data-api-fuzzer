@@ -120,6 +120,19 @@ contract_has_api() {
   rg -F -q "/cats/{org}/{service}/$api:" "$contract_path"
 }
 
+karate_has_api_tag() {
+  local service="$1"
+  local api="$2"
+  local service_dir="$ROOT_DIR/karate-tests/src/test/resources/scenarios/$service"
+  if [[ -z "$api" ]]; then
+    return 0
+  fi
+  if [[ ! -d "$service_dir" ]]; then
+    return 1
+  fi
+  rg -g '*.feature' -q "^@service=${service} @api=${api}( |$)" "$service_dir"
+}
+
 declare -a entries=()
 current_id=""
 current_org=""
@@ -173,8 +186,14 @@ for entry in "${entries[@]}"; do
   if [[ "$SERVICE_FILTER" != "all" && "$service" != "$SERVICE_FILTER" ]]; then
     continue
   fi
-  if ! contract_has_api "$contract_path" "$API_FILTER"; then
-    continue
+  if [[ -n "$API_FILTER" ]]; then
+    if contract_has_api "$contract_path" "$API_FILTER"; then
+      :
+    elif [[ "$SOURCE" == "karate" ]] && karate_has_api_tag "$service" "$API_FILTER"; then
+      :
+    else
+      continue
+    fi
   fi
 
   selected+=("$entry")

@@ -4,8 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-ORG="${1:-${ORG:-catsOrg}}"
-SERVICE="${2:-${SERVICE:-booking}}"
+ORG="${1:-${ORG:-orgA}}"
+SERVICE="${2:-${SERVICE:-reservation}}"
 OUTPUT="${3:-path}"
 CATALOG_PATH="${GATEWAY_CONTRACT_CATALOG_PATH:-$ROOT_DIR/docs/openapi/gateway/catalog.yaml}"
 

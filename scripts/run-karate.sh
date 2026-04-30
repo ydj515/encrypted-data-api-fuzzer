@@ -5,8 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 KARATE_BUILD_DIR="$ROOT_DIR/karate-tests/build/karate-reports"
 
-ORG="${ORG:-catsOrg}"
-SERVICE="${SERVICE:-booking}"
+ORG="${ORG:-orgA}"
+SERVICE="${SERVICE:-reservation}"
 API="${API:-}"
 GATEWAY_URL="${GATEWAY_URL:-http://localhost:28080}"
 

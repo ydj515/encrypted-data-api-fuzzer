@@ -3,8 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ORG="${ORG:-catsOrg}"
-SERVICE="${SERVICE:-booking}"
+ORG="${ORG:-orgA}"
+SERVICE="${SERVICE:-reservation}"
 API="${API:-}"
 DEFAULT_CONTRACT_PATH="$(bash "$SCRIPT_DIR/resolve-cats-contract.sh" "$ORG" "$SERVICE" full)"
 CONTRACT_PATH="${CONTRACT_PATH:-$DEFAULT_CONTRACT_PATH}"
@@ -22,8 +22,8 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 환경변수(선택):
   CONTRACT_PATH  OpenAPI 파일 경로 (기본: ORG/SERVICE에 맞는 gateway 계약 자동 선택)
   SERVER_URL     Gateway 서버 URL (기본: http://localhost:28080)
-  ORG            path 변수 org 값 (기본: catsOrg)
-  SERVICE        path 변수 service 값 (기본: booking)
+  ORG            path 변수 org 값 (기본: orgA)
+  SERVICE        path 변수 service 값 (기본: reservation)
   API            실행 대상 API 이름 (미지정 시 전체, 예: createReservation)
   CATS_BIN       cats 실행 파일 경로/이름 (기본: cats)
   DRY_RUN        true면 실행하지 않고 명령만 출력

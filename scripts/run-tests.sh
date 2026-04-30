@@ -31,8 +31,8 @@ run_cats() {
 
 echo "[정보] 통합 테스트 실행"
 echo "  SOURCE=${SOURCE}"
-echo "  ORG=${ORG:-catsOrg}"
-echo "  SERVICE=${SERVICE:-booking}"
+echo "  ORG=${ORG:-orgA}"
+echo "  SERVICE=${SERVICE:-reservation}"
 echo "  API=${API:-전체}"
 
 case "$SOURCE" in
