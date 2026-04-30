@@ -8,6 +8,8 @@ Build a scenario because the API chain makes business sense inside one service c
 
 Scenario scope is exactly one selected Swagger/OpenAPI document. Do not combine APIs from multiple OpenAPI documents, multiple services, or multiple org/service path prefixes.
 
+This repository targets Karate `1.5.2`. Use `@setup` for fixture-only preparation when that keeps the actual business scenario cleaner, and reserve the main scenario body for the flow that the report should explain.
+
 Good scenario shape:
 
 ```gherkin
@@ -36,6 +38,7 @@ Scenario: A에서 받은 값을 B 요청에 사용한다
    - Low confidence: generic text fields such as `description`, `memo`, `purpose`, or nullable fields. Do not chain them unless the domain logic explicitly requires it.
 6. Choose the shortest scenario that proves a useful workflow.
 7. Add cleanup when the scenario creates mutable state.
+8. If a setup step exists only to manufacture IDs or seed data, check whether it should live in `@setup` instead of the visible business scenario.
 
 ## Examples In This Repository
 
@@ -74,7 +77,8 @@ Do not create a scenario only because:
 ## Output Rules
 
 - Store scenario features under `karate-tests/src/test/resources/scenarios/<service>/<scenario-kebab>/<scenario-kebab>.feature`.
-- Use `@service=<service> @api=<primaryApi>`.
+- Use `@service=<service> @api=<scenarioId> @kind=scenario`.
+- `scenarioId`는 단건 API 태그와 겹치지 않는 camelCase 흐름 식별자여야 한다. 예: `reservationLifecycle`, `ticketLifecycle`, `resourceScheduleReservationFlow`.
 - Name variables after domain values, for example `reservationId`, `ticketId`, `visitId`, or `ci`.
 - Prefer exact assertions for values carried across API boundaries:
 

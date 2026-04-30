@@ -46,6 +46,22 @@ Range:
   - `OpenAPI range 필드 <field> 최솟값 미만 시 400 반환`
   - `OpenAPI range 필드 <field> 최댓값 초과 시 400 반환`
 
+String Length:
+
+- For string `minLength`, create one below-minimum case.
+- Prefer `""` when `minLength` is `1`; otherwise use a string with exactly `minLength - 1` characters.
+- Scenario name: `OpenAPI minLength 필드 <field> 최소 길이 미만 시 400 반환`.
+
+- For string `maxLength`, create one above-maximum case.
+- Use a string with exactly `maxLength + 1` characters.
+- Scenario name: `OpenAPI maxLength 필드 <field> 최대 길이 초과 시 400 반환`.
+
+Pattern:
+
+- For string `pattern`, create one non-matching case when a simple deterministic invalid value can be produced.
+- Prefer a punctuation-only string such as `!` repeated to a valid length.
+- Scenario name: `OpenAPI pattern 필드 <field> 패턴 위반 시 400 반환`.
+
 ## Output Rules
 
 - Add negative cases to single API features, not LLM-planned business flow features.

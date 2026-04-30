@@ -79,7 +79,7 @@ LIFECYCLES = {
     "reservation": {
         "name": "reservation-lifecycle",
         "feature": "orgA 예약 서비스 예약 전체 생명주기",
-        "tag_api": "createReservation",
+        "scenario_api": "reservationLifecycle",
         "id_field": "reservationId",
         "id_var": "reservationId",
         "steps": ["createReservation", "getReservationDetail", "cancelReservation"],
@@ -92,7 +92,7 @@ LIFECYCLES = {
     "support": {
         "name": "ticket-lifecycle",
         "feature": "orgB support 티켓 생명주기",
-        "tag_api": "createTicket",
+        "scenario_api": "ticketLifecycle",
         "id_field": "ticketId",
         "id_var": "ticketId",
         "steps": ["createTicket", "getTicketDetail", "resolveTicket"],
@@ -105,7 +105,7 @@ LIFECYCLES = {
     "visit": {
         "name": "visit-lifecycle",
         "feature": "orgB visit 예약 생명주기",
-        "tag_api": "createVisit",
+        "scenario_api": "visitLifecycle",
         "id_field": "visitId",
         "id_var": "visitId",
         "steps": ["createVisit", "getVisitDetail", "cancelVisit"],
@@ -446,6 +446,24 @@ def invalid_constraint_cases(field: Field) -> list[tuple[str, Any]]:
             cases.append((f"OpenAPI range 필드 {field.name} 최솟값 미만 시 400 반환", minimum - 1))
         if isinstance(maximum, (int, float)):
             cases.append((f"OpenAPI range 필드 {field.name} 최댓값 초과 시 400 반환", maximum + 1))
+    elif schema_type == "string":
+        min_length = schema.get("minLength")
+        max_length = schema.get("maxLength")
+        pattern = schema.get("pattern")
+
+        if isinstance(min_length, int) and min_length > 0:
+            invalid = "" if min_length == 1 else "x" * (min_length - 1)
+            cases.append((f"OpenAPI minLength 필드 {field.name} 최소 길이 미만 시 400 반환", invalid))
+        if isinstance(max_length, int):
+            cases.append((f"OpenAPI maxLength 필드 {field.name} 최대 길이 초과 시 400 반환", "X" * (max_length + 1)))
+        if isinstance(pattern, str) and pattern:
+            invalid_len = 1
+            if isinstance(min_length, int):
+                invalid_len = max(invalid_len, min_length)
+            if isinstance(max_length, int) and invalid_len > max_length:
+                invalid_len = max_length
+            if invalid_len > 0:
+                cases.append((f"OpenAPI pattern 필드 {field.name} 패턴 위반 시 400 반환", "!" * invalid_len))
 
     return cases
 
@@ -495,9 +513,18 @@ def response_match_lines(
     return lines
 
 
-def feature_header(org: str, service: str, api: str, title: str) -> list[str]:
+def feature_header(
+    org: str,
+    service: str,
+    api: str,
+    title: str,
+    extra_tags: list[str] | None = None,
+) -> list[str]:
+    tags = [f"@service={service}", f"@api={api}"]
+    if extra_tags:
+        tags.extend(f"@{tag}" for tag in extra_tags)
     return [
-        f"@service={service} @api={api}",
+        " ".join(tags),
         f"Feature: {title}",
         "",
         "  Background:",
@@ -630,7 +657,7 @@ def expected_values_from_response_schema(operation: Operation) -> dict[str, str]
 
 def api_feature(org: str, service: str, operation: Operation, operations: list[Operation]) -> str:
     title = f"{org} {service} {operation.summary or operation.api} 단건 API 테스트"
-    lines = feature_header(org, service, operation.api, title)
+    lines = feature_header(org, service, operation.api, title, extra_tags=["kind=single-api"])
 
     links = setup_links(operation, operations)
     request_overrides = {link.field_name: f"#({link.field_name})" for link in links}
@@ -714,7 +741,13 @@ def lifecycle_feature(org: str, service: str, operations: dict[str, Operation]) 
 
     id_field = str(config["id_field"])
     id_var = str(config["id_var"])
-    lines = feature_header(org, service, str(config["tag_api"]), str(config["feature"]))
+    lines = feature_header(
+        org,
+        service,
+        str(config["scenario_api"]),
+        str(config["feature"]),
+        extra_tags=["kind=scenario"],
+    )
     lines.append("  Scenario: 생성 후 조회하고 종료 상태로 변경한다")
 
     for index, api in enumerate(config["steps"]):

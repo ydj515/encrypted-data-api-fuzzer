@@ -4,6 +4,12 @@
 
 Use these rules for this repository only.
 
+Repository Karate baseline:
+
+- Dependency: `io.karatelabs:karate-junit5:1.5.2`
+- Java imports: keep `com.intuit.karate.*` until Karate `1.6.x` changes package names
+- `@setup` lifecycle is available and should be considered first for fixture-only setup in Karate `1.5.x`
+
 Primary OpenAPI source:
 
 ```text
@@ -21,7 +27,7 @@ karate-tests/src/test/resources/scenarios/
 Use this structure for generated files:
 
 ```gherkin
-@service=<service> @api=<apiName>
+@service=<service> @api=<apiName> @kind=single-api
 Feature: <org> <service> <purpose>
 
   Background:
@@ -48,7 +54,8 @@ Single API mode:
 - Include at least one success scenario.
 - Add one required-field negative scenario per OpenAPI required request field.
 - Add enum, format, and numeric range negative scenarios from OpenAPI request schemas when those constraints exist.
-- If the API requires a created identifier, add setup calls that create the identifier and cleanup calls that finish the test data state. The target API remains the unit under test.
+- If the API requires a created identifier, prefer Karate `@setup` or helper-style fixture preparation before inlining extra API calls into the main success scenario.
+- If cleanup is required only to keep test data tidy, prefer a separate helper/setup strategy over turning the main success scenario into a lifecycle-style flow.
 
 Scenario mode:
 
@@ -59,7 +66,8 @@ Scenario mode:
 - Capture values from earlier responses and reuse them with `#(...)` only when the target request field has the same domain meaning.
 - Avoid chaining fields that merely have the same primitive type or generic name unless OpenAPI operation descriptions, examples, or field names confirm the relationship.
 - Do not chain APIs across different Swagger/OpenAPI documents or different services.
-- Keep the tag `@api=<primary create api>` so existing filtering remains useful.
+- Use a scenario-specific `@api` tag such as `reservationLifecycle`, `ticketLifecycle`, or `resourceScheduleReservationFlow` so 단건 API 리포트와 섞이지 않게 한다.
+- Add `@kind=scenario` to scenario features.
 
 ## Plain OpenAPI to Gateway API Mapping
 
@@ -125,6 +133,8 @@ The gateway and mock-rest-api-server must be running before these tests can pass
 
 - The feature path matches `scenarios/<service>/<case>/<case>.feature`.
 - The first line includes `@service=<service>` and `@api=<apiName>`.
+- Single API features use the real gateway action as `@api`; scenario features use a distinct scenario identifier as `@api`.
+- Tag filters remain expressible as separate Karate tags instead of a single combined string expression.
 - The gateway path uses `basePath + '/<apiName>'`.
 - Path parameters from plain OpenAPI are present in the JSON request body.
 - Response assertions are not only status checks.
