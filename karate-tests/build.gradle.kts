@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation("com.intuit.karate:karate-junit5:1.4.1")
+    testImplementation("io.karatelabs:karate-junit5:1.5.2")
 }
 
 tasks.test {
