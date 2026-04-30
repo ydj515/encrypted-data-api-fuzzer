@@ -17,7 +17,7 @@ Karate 기반 E2E 시나리오 테스트 모듈. 게이트웨이를 블랙박스
 ```shell
 mise install                                             # Java 21.0.2 설치
 mise run run                                             # 전체 시나리오 실행
-SERVICE=booking API=listResources mise run run           # 특정 API만 실행
+ORG=orgA SERVICE=reservation API=listResources mise run run  # 특정 API만 실행
 ```
 
 > gateway(28080)와 mock-rest-api-server(18080)가 먼저 기동되어 있어야 한다.

@@ -38,7 +38,7 @@ SOURCE=cats mise run test
 ORG=orgB SERVICE=visit mise run test
 
 # 특정 API만 실행
-ORG=catsOrg SERVICE=booking API=createReservation SOURCE=karate mise run test
+ORG=orgA SERVICE=reservation API=createReservation SOURCE=karate mise run test
 ```
 
 레포트 UI는 아래 주소에서 확인합니다.

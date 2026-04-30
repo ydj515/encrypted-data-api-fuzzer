@@ -68,9 +68,8 @@ Then run tests from the repository root:
 
 ```shell
 SOURCE=all mise run test
-ORG=catsOrg SERVICE=booking API=createReservation SOURCE=karate mise run test
-ORG=catsOrg SERVICE=booking API=listResources CATS_PROFILE=smoke SOURCE=cats mise run test
 ORG=orgA SERVICE=reservation API=createReservation SOURCE=karate mise run test
+ORG=orgA SERVICE=reservation API=listResources CATS_PROFILE=smoke SOURCE=cats mise run test
 ORG=orgB SERVICE=visit API=listSites SOURCE=cats mise run test
 ```
 

@@ -85,13 +85,13 @@ ORG=orgB SERVICE=visit mise run test
 
 # 특정 API만
 ORG=orgB SERVICE=visit API=listSites SOURCE=cats mise run test
-ORG=catsOrg SERVICE=booking API=createReservation SOURCE=karate mise run test
+ORG=orgA SERVICE=reservation API=createReservation SOURCE=karate mise run test
 ```
 
 `SOURCE` defaults to `all`. CATS defaults to full mode. Use `CATS_PROFILE=smoke` for the smoke OpenAPI contract:
 
 ```shell
-ORG=catsOrg SERVICE=booking API=listResources CATS_PROFILE=smoke SOURCE=cats mise run test
+ORG=orgA SERVICE=reservation API=listResources CATS_PROFILE=smoke SOURCE=cats mise run test
 ORG=orgB SERVICE=visit API=listSites CATS_PROFILE=smoke SOURCE=cats mise run test
 ```
 
