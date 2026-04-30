@@ -1,8 +1,10 @@
 package com.example.reportserver.service;
 
 import com.example.reportserver.model.TestCase;
+import com.example.reportserver.model.TestCaseKind;
 import com.example.reportserver.model.TestRun;
 import com.example.reportserver.model.TestSource;
+import com.example.reportserver.parser.dto.KarateFeatureResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -14,9 +16,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -86,7 +91,8 @@ public class RunStorageService {
             return Collections.emptyList();
         }
         try {
-            return objectMapper.readValue(cases.toFile(), new TypeReference<>() {});
+            List<TestCase> loaded = objectMapper.readValue(cases.toFile(), new TypeReference<>() {});
+            return enrichKarateCaseKinds(runId, loaded);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -153,6 +159,82 @@ public class RunStorageService {
 
     public Path runDir(String runId) {
         return dataDir.resolve(canonicalRunId(runId));
+    }
+
+    private List<TestCase> enrichKarateCaseKinds(String runId, List<TestCase> cases) {
+        if (cases.isEmpty() || cases.stream().allMatch(c -> c.getKind() != null)) {
+            return cases;
+        }
+
+        Map<String, TestCaseKind> kindsByScenario = loadKarateKindsByScenario(runId);
+        if (kindsByScenario.isEmpty()) {
+            return cases;
+        }
+
+        List<TestCase> enriched = new ArrayList<>(cases.size());
+        for (TestCase testCase : cases) {
+            if (testCase.getKind() == null) {
+                testCase.setKind(kindsByScenario.get(caseScenarioKey(testCase.getApi(), testCase.getScenarioName(), testCase.getName())));
+            }
+            enriched.add(testCase);
+        }
+        return enriched;
+    }
+
+    private Map<String, TestCaseKind> loadKarateKindsByScenario(String runId) {
+        Path reportDir = runDir(runId).resolve("report");
+        if (!Files.isDirectory(reportDir)) {
+            return Collections.emptyMap();
+        }
+
+        try (Stream<Path> files = Files.list(reportDir)) {
+            Map<String, TestCaseKind> kindsByScenario = new HashMap<>();
+            files.filter(path -> path.getFileName().toString().endsWith(".karate-json.txt"))
+                    .forEach(path -> loadKarateKindsFromFile(path, kindsByScenario));
+            return kindsByScenario;
+        } catch (IOException e) {
+            log.warn("Karate kind 보강용 리포트 조회 실패, 스킵: {}", reportDir, e);
+            return Collections.emptyMap();
+        }
+    }
+
+    private void loadKarateKindsFromFile(Path path, Map<String, TestCaseKind> kindsByScenario) {
+        try {
+            KarateFeatureResult feature = objectMapper.readValue(path.toFile(), KarateFeatureResult.class);
+            if (feature.getScenarioResults() == null) {
+                return;
+            }
+            for (KarateFeatureResult.ScenarioResult scenario : feature.getScenarioResults()) {
+                String api = extractKarateTagValue(scenario.getTags(), "api");
+                TestCaseKind kind = TestCaseKind.fromTagValue(extractKarateTagValue(scenario.getTags(), "kind"));
+                if (kind == null) {
+                    continue;
+                }
+                kindsByScenario.put(caseScenarioKey(api, scenario.getName(), scenario.getName()), kind);
+            }
+        } catch (IOException e) {
+            log.warn("Karate kind 보강용 feature JSON 파싱 실패, 스킵: {}", path, e);
+        }
+    }
+
+    private String extractKarateTagValue(List<String> tags, String key) {
+        if (tags == null) {
+            return null;
+        }
+        return tags.stream()
+                .map(tag -> tag != null && tag.startsWith("@") ? tag.substring(1) : tag)
+                .filter(tag -> tag != null && !tag.isBlank())
+                .map(tag -> tag.split("=", 2))
+                .filter(parts -> parts.length == 2 && key.equals(parts[0]) && !parts[1].isBlank())
+                .map(parts -> parts[1])
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String caseScenarioKey(String api, String scenarioName, String fallbackName) {
+        String effectiveApi = api == null ? "" : api;
+        String effectiveScenarioName = scenarioName != null && !scenarioName.isBlank() ? scenarioName : fallbackName;
+        return effectiveApi + "\u0000" + (effectiveScenarioName == null ? "" : effectiveScenarioName);
     }
 
     private String canonicalRunId(String runId) {

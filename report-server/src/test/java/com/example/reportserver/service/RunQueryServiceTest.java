@@ -1,9 +1,12 @@
 package com.example.reportserver.service;
 
 import com.example.reportserver.model.TestCase;
+import com.example.reportserver.model.TestCaseKind;
+import com.example.reportserver.model.TestCaseType;
 import com.example.reportserver.model.TestRun;
 import com.example.reportserver.model.TestSource;
 import com.example.reportserver.model.TestStatus;
+import com.example.reportserver.service.dto.CaseFilter;
 import com.example.reportserver.service.dto.RunFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -158,6 +161,41 @@ class RunQueryServiceTest {
                 .containsExactly(200, 404);
     }
 
+    @Test
+    void findScenarioCases_시나리오행만반환하고필터를적용한다() {
+        storageService.saveRun(run("detail-run", null, 1, TestSource.KARATE, 2, 0));
+        storageService.saveCases("detail-run", List.of(
+                testCase("detail-run", "createReservation", 201, TestStatus.PASS, TestCaseType.SCENARIO, TestCaseKind.SINGLE_API, "기본 요청 성공"),
+                testCase("detail-run", "createReservation", 201, TestStatus.PASS, TestCaseType.HTTP_CALL, TestCaseKind.SINGLE_API, "기본 요청 성공 #1"),
+                testCase("detail-run", "reservationLifecycle", 0, TestStatus.PASS, TestCaseType.SCENARIO, TestCaseKind.SCENARIO, "생성 후 조회하고 종료 상태로 변경한다")
+        ));
+
+        List<TestCase> filtered = queryService.findScenarioCases("detail-run", CaseFilter.builder()
+                .api("reservation")
+                .kind(TestCaseKind.SCENARIO)
+                .status(TestStatus.PASS)
+                .build());
+
+        assertThat(filtered)
+                .extracting(TestCase::getName)
+                .containsExactly("생성 후 조회하고 종료 상태로 변경한다");
+    }
+
+    @Test
+    void findAvailableCaseApis와Kinds_시나리오행기준으로반환한다() {
+        storageService.saveRun(run("detail-run", null, 1, TestSource.KARATE, 2, 0));
+        storageService.saveCases("detail-run", List.of(
+                testCase("detail-run", "createReservation", 201, TestStatus.PASS, TestCaseType.SCENARIO, TestCaseKind.SINGLE_API, "기본 요청 성공"),
+                testCase("detail-run", "createReservation", 201, TestStatus.PASS, TestCaseType.HTTP_CALL, TestCaseKind.SINGLE_API, "기본 요청 성공 #1"),
+                testCase("detail-run", "reservationLifecycle", 0, TestStatus.PASS, TestCaseType.SCENARIO, TestCaseKind.SCENARIO, "생성 후 조회하고 종료 상태로 변경한다")
+        ));
+
+        assertThat(queryService.findAvailableCaseApis("detail-run"))
+                .containsExactly("createReservation", "reservationLifecycle");
+        assertThat(queryService.findAvailableCaseKinds("detail-run"))
+                .containsExactly(TestCaseKind.SCENARIO, TestCaseKind.SINGLE_API);
+    }
+
     private TestRun run(String runId, String api, int dayOfMonth, TestSource source, int passCount, int failCount) {
         return TestRun.builder()
                 .id(runId)
@@ -175,11 +213,26 @@ class RunQueryServiceTest {
     }
 
     private TestCase testCase(String runId, String api, int httpStatus, TestStatus status) {
+        return testCase(runId, api, httpStatus, status, TestCaseType.SCENARIO, null, api + " case");
+    }
+
+    private TestCase testCase(
+            String runId,
+            String api,
+            int httpStatus,
+            TestStatus status,
+            TestCaseType caseType,
+            TestCaseKind kind,
+            String name
+    ) {
         return TestCase.builder()
                 .id(runId + "-" + api + "-" + httpStatus)
                 .runId(runId)
+                .caseType(caseType)
+                .kind(kind)
                 .api(api)
-                .name(api + " case")
+                .name(name)
+                .scenarioName(name)
                 .endpoint("/cats/catsOrg/booking/" + api)
                 .httpMethod("POST")
                 .httpStatus(httpStatus)

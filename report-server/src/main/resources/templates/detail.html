@@ -29,9 +29,8 @@
     header .sep { color: #4b5563; font-size: 0.875rem; }
     header .current { font-size: 0.875rem; font-weight: 600; color: #fff; }
 
-    .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 32px 32px; }
 
-    /* 메타 요약 카드 */
     .meta-card {
       background: #fff;
       border-radius: 10px;
@@ -86,22 +85,26 @@
       border-radius: 12px;
       font-size: 0.78rem;
       font-weight: 600;
+      white-space: nowrap;
     }
     .badge-pass { background: #dcfce7; color: #16a34a; }
     .badge-fail { background: #fee2e2; color: #dc2626; }
     .badge-karate { background: #eff6ff; color: #3b82f6; border: 1px solid #bfdbfe; }
     .badge-cats { background: #fdf4ff; color: #9333ea; border: 1px solid #e9d5ff; }
-    .badge-scenario { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; font-size: 0.72rem; }
-    .badge-http { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.72rem; }
+    .badge-kind-single { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
+    .badge-kind-scenario { background: #ecfdf5; color: #047857; border: 1px solid #86efac; }
 
     .api-label {
-      display: inline-block;
+      display: block;
       padding: 2px 8px;
       background: #eff6ff;
       color: #3b82f6;
       border: 1px solid #bfdbfe;
       border-radius: 4px;
       font-size: 0.75rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .api-all { color: #9ca3af; font-size: 0.85rem; font-style: italic; }
 
@@ -113,22 +116,182 @@
     .stat-pass { color: #16a34a; }
     .stat-fail { color: #dc2626; }
 
-    /* 케이스 테이블 */
+    .filter-panel {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      margin-bottom: 20px;
+    }
+    .filter-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 16px;
+    }
+    .filter-grid {
+      display: grid;
+      grid-template-columns: minmax(160px, 180px) minmax(160px, 180px) minmax(260px, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+    .filter-grid--no-kind {
+      grid-template-columns: minmax(160px, 180px) minmax(260px, 1fr) auto;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 5px; }
+    .filter-group label { font-size: 0.75rem; font-weight: 600; color: #6b7280; letter-spacing: 0.02em; }
+    .filter-group select,
+    .filter-group input[type="text"] {
+      padding: 9px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #1a1d23;
+      background: #f9fafb;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+      width: 100%;
+    }
+    .filter-group select:focus,
+    .filter-group input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+      background: #fff;
+    }
+
+    .autocomplete {
+      position: relative;
+    }
+    .autocomplete-panel {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #dbe2ea;
+      border-radius: 12px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 280px;
+      overflow-y: auto;
+      z-index: 20;
+    }
+    .autocomplete-panel[hidden] {
+      display: none;
+    }
+    .autocomplete-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 12px;
+      border: none;
+      background: #fff;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .autocomplete-option:hover,
+    .autocomplete-option.is-active {
+      background: #eff6ff;
+    }
+    .autocomplete-option-badge {
+      flex: 0 0 auto;
+      padding: 2px 8px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .autocomplete-option-text {
+      font-size: 0.84rem;
+      color: #1f2937;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+    }
+    .autocomplete-empty {
+      padding: 10px 12px;
+      color: #9ca3af;
+      font-size: 0.82rem;
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      padding-bottom: 1px;
+    }
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #f3f4f6;
+      color: #4b5563;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      text-decoration: none;
+    }
+    .icon-btn:hover {
+      background: #e5e7eb;
+      border-color: #d1d5db;
+      color: #1f2937;
+    }
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+    .btn {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      display: inline-block;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-reset { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+    .btn-reset:hover { background: #e5e7eb; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
     .section-title {
       font-size: 1rem;
       font-weight: 700;
       color: #1a1d23;
-      margin-bottom: 12px;
     }
-    .case-count { font-size: 0.85rem; color: #6b7280; margin-bottom: 12px; }
+    .case-count { font-size: 0.85rem; color: #6b7280; }
 
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
     table {
       width: 100%;
+      min-width: 1044px;
       border-collapse: collapse;
       background: #fff;
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      table-layout: fixed;
     }
     thead tr { background: #f0f2f5; }
     th, td { padding: 12px 16px; text-align: left; font-size: 0.875rem; }
@@ -138,15 +301,41 @@
     tbody tr.row-fail { border-left: 3px solid #fca5a5; }
     tbody tr.row-pass { border-left: 3px solid transparent; }
 
-    .case-name { font-weight: 500; color: #1a1d23; }
-    .scenario-name { font-size: 0.78rem; color: #6b7280; margin-top: 2px; }
+    .col-kind     { width: 90px; }
+    .col-api      { width: 130px; }
+    .col-name     { /* 나머지 공간 */ }
+    .col-endpoint { width: 180px; }
+    .col-method   { width: 96px; }
+    .col-http     { width: 58px; }
+    .col-status   { width: 72px; }
+    .col-duration { width: 80px; }
+    .col-failure  { width: 180px; }
+
+    .case-name {
+      font-weight: 500;
+      color: #1a1d23;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .scenario-name {
+      font-size: 0.78rem;
+      color: #6b7280;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .endpoint {
       font-family: 'SFMono-Regular', Consolas, monospace;
       font-size: 0.8rem;
       color: #374151;
-      word-break: break-all;
-      max-width: 280px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
     }
+    .failure-msg { white-space: nowrap; }
     .method {
       display: inline-block;
       padding: 2px 8px;
@@ -176,16 +365,38 @@
     .http-5xx { background: #fee2e2; color: #991b1b; }
     .http-other { background: #f3f4f6; color: #374151; }
 
+    .td-center { text-align: center; }
     .duration { font-size: 0.82rem; color: #6b7280; white-space: nowrap; }
 
     .failure-msg {
       font-size: 0.78rem;
       color: #dc2626;
       font-family: monospace;
-      max-width: 240px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      display: block;
+      cursor: pointer;
+    }
+    .failure-msg:hover {
+      text-decoration: underline;
+      text-decoration-style: dashed;
+    }
+    .failure-popover {
+      position: fixed;
+      z-index: 200;
+      background: #1a1d23;
+      color: #f1f5f9;
+      border-radius: 10px;
+      padding: 14px 16px;
+      max-width: 480px;
+      min-width: 200px;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.8rem;
+      line-height: 1.65;
+      word-break: break-all;
+      white-space: pre-wrap;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.07);
     }
 
     .empty-state {
@@ -196,6 +407,20 @@
       background: #fff;
       border-radius: 10px;
       box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+
+    .is-hidden { display: none; }
+
+    @media (max-width: 900px) {
+      .filter-grid {
+        grid-template-columns: 1fr;
+      }
+      .filter-actions {
+        justify-content: flex-start;
+      }
+      .container {
+        padding: 24px 16px;
+      }
     }
   </style>
 </head>
@@ -212,7 +437,6 @@
 
 <div class="container">
 
-  <!-- 배치 메타 요약 카드 -->
   <div class="meta-card">
     <div class="meta-card-header">
       <div class="run-id" th:text="${run.id}"></div>
@@ -276,35 +500,76 @@
     </div>
   </div>
 
-  <!-- 테스트 케이스 테이블 -->
-  <div class="section-title">테스트 케이스</div>
-  <div class="case-count" th:text="${cases.size() + '개 케이스'}"></div>
+  <div class="filter-panel">
+    <div class="filter-title">필터</div>
+    <div class="filter-grid" th:classappend="${#lists.isEmpty(availableKinds)} ? 'filter-grid--no-kind' : ''">
+      <div class="filter-group">
+        <label for="statusFilter">상태</label>
+        <select id="statusFilter">
+          <option value="">전체</option>
+          <option th:each="s : ${allStatuses}" th:value="${s.name()}" th:text="${s.name()}"></option>
+        </select>
+      </div>
 
-  <div th:if="${#lists.isEmpty(cases)}" class="empty-state">
-    테스트 케이스 정보가 없습니다.
+      <div th:unless="${#lists.isEmpty(availableKinds)}" class="filter-group">
+        <label for="kindFilter">유형</label>
+        <select id="kindFilter">
+          <option value="">전체</option>
+          <option th:each="k : ${availableKinds}" th:value="${k.name()}" th:text="${k.label}"></option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="apiFilterInput">API</label>
+        <div class="autocomplete">
+          <input id="apiFilterInput" type="text" placeholder="API 검색" autocomplete="off">
+          <div id="apiAutocompletePanel" class="autocomplete-panel" hidden></div>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="button" id="resetFilterBtn" class="icon-btn" aria-label="필터 초기화" title="필터 초기화">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M16.667 10A6.667 6.667 0 1 1 15 5.585" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16.667 3.333v3.334h-3.334" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
   </div>
 
-  <table th:unless="${#lists.isEmpty(cases)}">
+  <div class="section-header">
+    <div class="section-title">테스트 케이스</div>
+    <div class="case-count" id="caseCount" th:text="${cases.size() + '개 케이스'}"></div>
+  </div>
+
+  <div id="emptyState" class="empty-state" style="display:none">
+    조건과 일치하는 시나리오 케이스가 없습니다.
+  </div>
+
+  <div class="table-wrapper" th:classappend="${#lists.isEmpty(cases)} ? 'is-hidden' : ''">
+  <table id="casesTable">
     <thead>
       <tr>
-        <th>유형</th>
-        <th>API</th>
-        <th>케이스 명</th>
-        <th>엔드포인트</th>
-        <th>메서드</th>
-        <th>HTTP</th>
-        <th>상태</th>
-        <th>소요 시간</th>
-        <th>실패 메시지</th>
+        <th th:unless="${#lists.isEmpty(availableKinds)}" class="col-kind">유형</th>
+        <th class="col-api">API</th>
+        <th class="col-name">케이스 명</th>
+        <th class="col-endpoint">엔드포인트</th>
+        <th class="col-method">메서드</th>
+        <th class="col-http">HTTP</th>
+        <th class="col-status">상태</th>
+        <th class="col-duration">소요 시간</th>
+        <th class="col-failure">실패 메시지</th>
       </tr>
     </thead>
     <tbody>
       <tr th:each="c : ${cases}"
+          th:attr="data-status=${c.status != null ? c.status.name() : ''},data-kind=${c.kind != null ? c.kind.name() : ''},data-api=${c.api != null ? c.api : ''}"
           th:classappend="${c.status != null and c.status.name() == 'FAIL'} ? 'row-fail' : 'row-pass'">
-        <td>
-          <span th:if="${c.caseType != null and c.caseType.name() == 'SCENARIO'}" class="badge badge-scenario">SCENARIO</span>
-          <span th:if="${c.caseType != null and c.caseType.name() == 'HTTP_CALL'}" class="badge badge-http">HTTP</span>
-          <span th:unless="${c.caseType != null}" style="color:#d1d5db; font-size:0.78rem;">-</span>
+        <td th:unless="${#lists.isEmpty(availableKinds)}">
+          <span th:if="${c.kind != null and c.kind.name() == 'SINGLE_API'}" class="badge badge-kind-single">단건</span>
+          <span th:if="${c.kind != null and c.kind.name() == 'SCENARIO'}" class="badge badge-kind-scenario">시나리오</span>
+          <span th:unless="${c.kind != null}" style="color:#d1d5db; font-size:0.78rem;">-</span>
         </td>
         <td>
           <span th:if="${c.api != null and !#strings.isEmpty(c.api)}"
@@ -313,15 +578,20 @@
                 style="color:#d1d5db; font-size:0.78rem;">-</span>
         </td>
         <td>
-          <div class="case-name" th:text="${c.name != null ? c.name : '-'}"></div>
+          <div class="case-name"
+               th:text="${c.name != null ? c.name : '-'}"
+               th:title="${c.name}"></div>
           <div th:if="${c.scenarioName != null and !#strings.isEmpty(c.scenarioName) and c.scenarioName != c.name}"
-               class="scenario-name" th:text="${c.scenarioName}"></div>
+               class="scenario-name"
+               th:text="${c.scenarioName}"
+               th:title="${c.scenarioName}"></div>
         </td>
         <td>
-          <span class="endpoint" th:text="${c.endpoint != null ? c.endpoint : '-'}"
+          <span class="endpoint"
+                th:text="${c.endpoint != null ? c.endpoint : '-'}"
                 th:title="${c.endpoint}"></span>
         </td>
-        <td>
+        <td th:classappend="${c.httpMethod == 'MULTIPLE' or c.httpMethod == null} ? 'td-center' : ''">
           <span th:if="${c.httpMethod != null}"
                 th:classappend="${
                   c.httpMethod == 'GET'    ? 'method-get'    :
@@ -334,7 +604,7 @@
                 th:text="${c.httpMethod}"></span>
           <span th:unless="${c.httpMethod != null}" style="color:#d1d5db; font-size:0.78rem;">-</span>
         </td>
-        <td>
+        <td th:classappend="${c.httpStatus <= 0} ? 'td-center' : ''">
           <span th:if="${c.httpStatus > 0}"
                 th:classappend="${
                   c.httpStatus >= 200 and c.httpStatus < 300 ? 'http-2xx' :
@@ -361,15 +631,212 @@
           <span th:if="${c.failureMsg != null and !#strings.isEmpty(c.failureMsg)}"
                 class="failure-msg"
                 th:text="${c.failureMsg}"
-                th:title="${c.failureMsg}"></span>
+                th:attr="data-msg=${c.failureMsg}"></span>
           <span th:unless="${c.failureMsg != null and !#strings.isEmpty(c.failureMsg)}"
                 style="color:#d1d5db; font-size:0.78rem;">-</span>
         </td>
       </tr>
     </tbody>
   </table>
+  </div>
 
 </div>
+
+<div id="failurePopover" class="failure-popover" hidden></div>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+  const availableApis = /*[[${availableApis}]]*/ [];
+
+  const statusFilter = document.getElementById('statusFilter');
+  const kindFilter   = document.getElementById('kindFilter');
+  const apiInput     = document.getElementById('apiFilterInput');
+  const apiPanel     = document.getElementById('apiAutocompletePanel');
+  const resetBtn     = document.getElementById('resetFilterBtn');
+  const caseCountEl  = document.getElementById('caseCount');
+  const emptyState   = document.getElementById('emptyState');
+  const casesTable   = document.getElementById('casesTable');
+  const tableWrapper = casesTable ? casesTable.closest('.table-wrapper') : null;
+  const rows         = casesTable ? Array.from(casesTable.querySelectorAll('tbody tr')) : [];
+
+  // URL 파라미터로 초기 필터 상태 복원
+  const urlParams = new URLSearchParams(location.search);
+  if (statusFilter && urlParams.get('status')) statusFilter.value = urlParams.get('status');
+  if (kindFilter   && urlParams.get('kind'))   kindFilter.value   = urlParams.get('kind');
+  if (apiInput     && urlParams.get('api'))    apiInput.value     = urlParams.get('api');
+
+  const filterRows = () => {
+    const statusVal = statusFilter ? statusFilter.value : '';
+    const kindVal   = kindFilter   ? kindFilter.value   : '';
+    const apiVal    = apiInput ? apiInput.value.trim().toLowerCase() : '';
+
+    let visible = 0;
+    rows.forEach(row => {
+      const match =
+        (!statusVal || row.dataset.status === statusVal) &&
+        (!kindVal   || row.dataset.kind   === kindVal)   &&
+        (!apiVal    || (row.dataset.api || '').toLowerCase().includes(apiVal));
+      row.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+
+    if (caseCountEl)  caseCountEl.textContent     = visible + '개 케이스';
+    if (emptyState)   emptyState.style.display   = visible === 0 ? '' : 'none';
+    if (tableWrapper) tableWrapper.style.display = visible === 0 ? 'none' : '';
+
+    // 새로고침 없이 URL 동기화 (공유/북마크 지원)
+    const next = new URLSearchParams();
+    if (statusVal)                      next.set('status', statusVal);
+    if (kindVal)                        next.set('kind',   kindVal);
+    if (apiInput && apiInput.value.trim()) next.set('api', apiInput.value.trim());
+    const search = next.toString() ? '?' + next.toString() : '';
+    history.replaceState(null, '', location.pathname + search);
+  };
+
+  // 초기 적용
+  filterRows();
+
+  if (statusFilter) statusFilter.addEventListener('change', filterRows);
+  if (kindFilter)   kindFilter.addEventListener('change',   filterRows);
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (statusFilter) statusFilter.value = '';
+      if (kindFilter)   kindFilter.value   = '';
+      if (apiInput)     apiInput.value     = '';
+      closePanel();
+      filterRows();
+    });
+  }
+
+  // 자동완성
+  let activeIndex    = -1;
+  let currentOptions = [];
+
+  const escapeHtml = v => v
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+
+  const closePanel = () => {
+    apiPanel.hidden = true;
+    apiPanel.innerHTML = '';
+    currentOptions = [];
+    activeIndex = -1;
+  };
+
+  const renderOptions = query => {
+    const kw = (query || '').trim().toLowerCase();
+    if (!kw) { closePanel(); return; }
+
+    currentOptions = availableApis.filter(a => a.toLowerCase().includes(kw)).slice(0, 8);
+    apiPanel.innerHTML = '';
+    activeIndex = -1;
+
+    if (currentOptions.length === 0) {
+      apiPanel.innerHTML = '<div class="autocomplete-empty">일치하는 API가 없습니다.</div>';
+      apiPanel.hidden = false;
+      return;
+    }
+
+    currentOptions.forEach((api, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'autocomplete-option';
+      btn.setAttribute('data-index', String(i));
+      btn.innerHTML =
+        '<span class="autocomplete-option-badge">API</span>' +
+        '<span class="autocomplete-option-text">' + escapeHtml(api) + '</span>';
+      btn.addEventListener('mousedown', e => e.preventDefault());
+      btn.addEventListener('click', () => { apiInput.value = api; closePanel(); filterRows(); });
+      apiPanel.appendChild(btn);
+    });
+    apiPanel.hidden = false;
+  };
+
+  const setActiveOption = next => {
+    const btns = Array.from(apiPanel.querySelectorAll('.autocomplete-option'));
+    btns.forEach(b => b.classList.remove('is-active'));
+    if (next < 0 || next >= btns.length) { activeIndex = -1; return; }
+    activeIndex = next;
+    btns[activeIndex].classList.add('is-active');
+    btns[activeIndex].scrollIntoView({ block: 'nearest' });
+  };
+
+  if (apiInput) {
+    apiInput.addEventListener('focus', () => { if (apiInput.value.trim()) renderOptions(apiInput.value); });
+    apiInput.addEventListener('input', () => { renderOptions(apiInput.value); filterRows(); });
+    apiInput.addEventListener('keydown', e => {
+      if (apiPanel.hidden) {
+        if (e.key === 'ArrowDown' && apiInput.value.trim()) { renderOptions(apiInput.value); e.preventDefault(); }
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setActiveOption(activeIndex + 1 >= currentOptions.length ? 0 : activeIndex + 1);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActiveOption(activeIndex - 1 < 0 ? currentOptions.length - 1 : activeIndex - 1);
+      } else if (e.key === 'Enter' && activeIndex >= 0 && currentOptions[activeIndex]) {
+        e.preventDefault();
+        apiInput.value = currentOptions[activeIndex];
+        closePanel();
+        filterRows();
+      } else if (e.key === 'Escape') {
+        closePanel();
+      }
+    });
+  }
+
+  const failurePopover = document.getElementById('failurePopover');
+
+  const openFailurePopover = (btn) => {
+    failurePopover.textContent = btn.dataset.msg || '';
+    failurePopover.hidden = false;
+    failurePopover._trigger = btn;
+
+    const rect = btn.getBoundingClientRect();
+    failurePopover.style.top = '0';
+    failurePopover.style.left = '0';
+
+    const pw = failurePopover.offsetWidth;
+    const ph = failurePopover.offsetHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let top  = rect.bottom + 8;
+    let left = rect.left;
+    if (left + pw > vw - 12) left = Math.max(8, vw - pw - 12);
+    if (top  + ph > vh - 12) top  = Math.max(8, rect.top - ph - 8);
+
+    failurePopover.style.top  = top  + 'px';
+    failurePopover.style.left = left + 'px';
+  };
+
+  const closeFailurePopover = () => {
+    if (failurePopover) { failurePopover.hidden = true; failurePopover._trigger = null; }
+  };
+
+  document.addEventListener('click', e => {
+    if (apiPanel && !apiPanel.contains(e.target) && e.target !== apiInput) closePanel();
+
+    const moreBtn = e.target.closest('.failure-msg');
+    if (moreBtn && failurePopover) {
+      e.stopPropagation();
+      if (!failurePopover.hidden && failurePopover._trigger === moreBtn) {
+        closeFailurePopover();
+      } else {
+        openFailurePopover(moreBtn);
+      }
+    } else if (failurePopover && !failurePopover.hidden && !failurePopover.contains(e.target)) {
+      closeFailurePopover();
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeFailurePopover();
+  });
+/*]]>*/
+</script>
 
 </body>
 </html>

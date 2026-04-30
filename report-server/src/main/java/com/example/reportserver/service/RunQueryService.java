@@ -1,9 +1,12 @@
 package com.example.reportserver.service;
 
 import com.example.reportserver.model.TestCase;
+import com.example.reportserver.model.TestCaseKind;
+import com.example.reportserver.model.TestCaseType;
 import com.example.reportserver.model.TestRun;
 import com.example.reportserver.model.TestStatus;
 import com.example.reportserver.contract.GatewayContract;
+import com.example.reportserver.service.dto.CaseFilter;
 import com.example.reportserver.service.dto.RunFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,6 +38,50 @@ public class RunQueryService {
 
     public List<TestCase> findCases(String runId) {
         return runStorageService.findCases(runId);
+    }
+
+    public List<TestCase> findScenarioCases(String runId, CaseFilter filter) {
+        return runStorageService.findCases(runId).stream()
+                .filter(this::isScenarioCase)
+                .filter(testCase -> matchesCase(testCase, filter))
+                .toList();
+    }
+
+    public List<TestCase> findHttpCallCases(String runId, CaseFilter filter) {
+        return runStorageService.findCases(runId).stream()
+                .filter(tc -> tc.getCaseType() == TestCaseType.HTTP_CALL)
+                .filter(tc -> matchesCase(tc, filter))
+                .toList();
+    }
+
+    public List<String> findAvailableCaseApis(String runId) {
+        TreeSet<String> apis = new TreeSet<>();
+        runStorageService.findCases(runId).stream()
+                .filter(this::isScenarioCase)
+                .map(TestCase::getApi)
+                .filter(this::hasValue)
+                .forEach(apis::add);
+        return List.copyOf(apis);
+    }
+
+    public List<String> findAvailableHttpCallApis(String runId) {
+        TreeSet<String> apis = new TreeSet<>();
+        runStorageService.findCases(runId).stream()
+                .filter(tc -> tc.getCaseType() == TestCaseType.HTTP_CALL)
+                .map(TestCase::getApi)
+                .filter(this::hasValue)
+                .forEach(apis::add);
+        return List.copyOf(apis);
+    }
+
+    public List<TestCaseKind> findAvailableCaseKinds(String runId) {
+        TreeSet<TestCaseKind> kinds = new TreeSet<>((left, right) -> left.name().compareTo(right.name()));
+        runStorageService.findCases(runId).stream()
+                .filter(this::isScenarioCase)
+                .map(TestCase::getKind)
+                .filter(kind -> kind != null)
+                .forEach(kinds::add);
+        return List.copyOf(kinds);
     }
 
     public List<String> findAvailableApis(String org, String service) {
@@ -99,6 +146,16 @@ public class RunQueryService {
         return true;
     }
 
+    private boolean matchesCase(TestCase c, CaseFilter f) {
+        if (f == null) {
+            return true;
+        }
+        if (hasValue(f.getApi()) && !containsIgnoreCase(c.getApi(), f.getApi())) return false;
+        if (f.getStatus() != null && f.getStatus() != c.getStatus()) return false;
+        if (f.getKind() != null && f.getKind() != c.getKind()) return false;
+        return true;
+    }
+
     private boolean hasCaseLevelFilter(RunFilter filter) {
         return hasValue(filter.getApi())
                 || filter.getHttpStatus() != null
@@ -117,6 +174,10 @@ public class RunQueryService {
 
     private boolean hasValue(String s) {
         return s != null && !s.isBlank();
+    }
+
+    private boolean isScenarioCase(TestCase testCase) {
+        return testCase.getCaseType() == TestCaseType.SCENARIO;
     }
 
     private boolean isAllowedApi(String api, Set<String> declaredApis) {

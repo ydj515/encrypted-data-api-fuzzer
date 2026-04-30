@@ -2,6 +2,7 @@ package com.example.reportserver.parser;
 
 import com.example.reportserver.model.TestCaseGranularity;
 import com.example.reportserver.model.TestCase;
+import com.example.reportserver.model.TestCaseKind;
 import com.example.reportserver.model.TestCaseType;
 import com.example.reportserver.model.TestStatus;
 import com.example.reportserver.parser.dto.KarateFeatureResult;
@@ -82,13 +83,15 @@ public class KarateCaseParser {
             List<HttpCall> httpCalls
     ) {
         String api = extractApi(scenario.getTags());
+        TestCaseKind kind = extractKind(scenario.getTags());
         String failureMsg = scenario.isFailed() ? extractFailureMsg(scenario.getStepResults()) : null;
-        HttpInfo httpInfo = summarizeHttpCalls(httpCalls);
+        HttpInfo httpInfo = summarizeHttpCalls(httpCalls, api, kind);
 
         return TestCase.builder()
                 .id(UUID.randomUUID().toString())
                 .runId(runId)
                 .caseType(TestCaseType.SCENARIO)
+                .kind(kind)
                 .api(api)
                 .name(scenario.getName())
                 .scenarioName(scenario.getName())
@@ -108,6 +111,7 @@ public class KarateCaseParser {
             List<HttpCall> httpCalls
     ) {
         String api = extractApi(scenario.getTags());
+        TestCaseKind kind = extractKind(scenario.getTags());
         List<TestCase> cases = new ArrayList<>();
 
         for (int i = 0; i < httpCalls.size(); i++) {
@@ -117,6 +121,7 @@ public class KarateCaseParser {
                     .id(UUID.randomUUID().toString())
                     .runId(runId)
                     .caseType(TestCaseType.HTTP_CALL)
+                    .kind(kind)
                     .api(api)
                     .name(scenario.getName() + " #" + sequence)
                     .scenarioName(scenario.getName())
@@ -134,13 +139,21 @@ public class KarateCaseParser {
     }
 
     private String extractApi(List<String> tags) {
+        return extractTagValue(tags, "api");
+    }
+
+    private TestCaseKind extractKind(List<String> tags) {
+        return TestCaseKind.fromTagValue(extractTagValue(tags, "kind"));
+    }
+
+    private String extractTagValue(List<String> tags, String key) {
         if (tags == null) return null;
         return tags.stream()
                 .map(this::normalizeTag)
                 .map(tag -> tag.split("=", 2))
-                .filter(parts -> parts.length == 2 && "api".equals(parts[0]))
+                .filter(parts -> parts.length == 2 && key.equals(parts[0]))
                 .map(parts -> parts[1])
-                .filter(api -> !api.isBlank())
+                .filter(value -> !value.isBlank())
                 .findFirst()
                 .orElse(null);
     }
@@ -194,14 +207,31 @@ public class KarateCaseParser {
         return null;
     }
 
-    private HttpInfo summarizeHttpCalls(List<HttpCall> httpCalls) {
+    private HttpInfo summarizeHttpCalls(List<HttpCall> httpCalls, String api, TestCaseKind kind) {
         if (httpCalls.isEmpty()) {
             return HttpInfo.unknown();
+        }
+        if (kind == TestCaseKind.SINGLE_API) {
+            HttpCall primaryCall = findPrimaryApiCall(httpCalls, api);
+            if (primaryCall != null) {
+                return primaryCall.info();
+            }
         }
         if (httpCalls.size() == 1) {
             return httpCalls.getFirst().info();
         }
         return new HttpInfo("MULTIPLE", "MULTIPLE", 0);
+    }
+
+    private HttpCall findPrimaryApiCall(List<HttpCall> httpCalls, String api) {
+        if (api == null || api.isBlank()) {
+            return null;
+        }
+        String suffix = "/" + api;
+        return httpCalls.stream()
+                .filter(call -> call.info().endpoint() != null && call.info().endpoint().endsWith(suffix))
+                .findFirst()
+                .orElse(null);
     }
 
     private String extractFailureMsg(List<KarateFeatureResult.StepResult> stepResults) {

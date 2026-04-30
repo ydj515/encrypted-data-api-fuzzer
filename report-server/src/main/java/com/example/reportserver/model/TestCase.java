@@ -14,6 +14,7 @@ public class TestCase {
     private String id;
     private String runId;
     private TestCaseType caseType;
+    private TestCaseKind kind;
     private String api;
     private String name;
     private String scenarioName;

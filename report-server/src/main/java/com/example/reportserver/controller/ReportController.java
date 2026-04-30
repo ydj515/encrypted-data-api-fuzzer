@@ -6,6 +6,7 @@ import com.example.reportserver.model.TestSource;
 import com.example.reportserver.model.TestStatus;
 import com.example.reportserver.service.RunQueryService;
 import com.example.reportserver.service.ServiceSummaryService;
+import com.example.reportserver.service.dto.CaseFilter;
 import com.example.reportserver.service.dto.RunFilter;
 import com.example.reportserver.service.dto.ServiceSummary;
 import lombok.RequiredArgsConstructor;
@@ -114,9 +115,20 @@ public class ReportController {
     public String runDetail(@PathVariable String runId, Model model) {
         TestRun run = runQueryService.findRun(runId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Run not found: " + runId));
-        List<TestCase> cases = runQueryService.findCases(runId);
+
+        boolean isCats = run.getSource() == TestSource.CATS;
+        List<TestCase> cases = isCats
+                ? runQueryService.findHttpCallCases(runId, CaseFilter.builder().build())
+                : runQueryService.findScenarioCases(runId, CaseFilter.builder().build());
+        List<String> availableApis = isCats
+                ? runQueryService.findAvailableHttpCallApis(runId)
+                : runQueryService.findAvailableCaseApis(runId);
+
         model.addAttribute("run", run);
         model.addAttribute("cases", cases);
+        model.addAttribute("availableApis", availableApis);
+        model.addAttribute("availableKinds", isCats ? List.of() : runQueryService.findAvailableCaseKinds(runId));
+        model.addAttribute("allStatuses", TestStatus.values());
         return "detail";
     }
 
