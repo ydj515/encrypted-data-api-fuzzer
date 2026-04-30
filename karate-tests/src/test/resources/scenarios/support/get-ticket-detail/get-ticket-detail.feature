@@ -1,4 +1,4 @@
-@service=support @api=getTicketDetail
+@service=support @api=getTicketDetail @kind=single-api
 Feature: orgB support 지원 티켓 상세 조회(POST 호환) 단건 API 테스트
 
   Background:

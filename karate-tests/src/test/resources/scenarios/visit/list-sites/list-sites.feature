@@ -1,4 +1,4 @@
-@service=visit @api=listSites
+@service=visit @api=listSites @kind=single-api
 Feature: orgB visit site 목록 조회(본문 기반) 단건 API 테스트
 
   Background:

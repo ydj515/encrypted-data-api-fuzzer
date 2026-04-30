@@ -1,4 +1,4 @@
-@service=reservation @api=createReservation
+@service=reservation @api=reservationLifecycle @kind=scenario
 Feature: orgA 예약 서비스 예약 전체 생명주기
 
   Background:

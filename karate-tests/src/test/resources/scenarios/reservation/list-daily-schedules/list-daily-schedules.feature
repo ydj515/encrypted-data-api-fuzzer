@@ -1,4 +1,4 @@
-@service=reservation @api=listDailySchedules
+@service=reservation @api=listDailySchedules @kind=single-api
 Feature: orgA reservation 일별 스케줄 목록 조회(본문 기반) 단건 API 테스트
 
   Background:

@@ -1,4 +1,4 @@
-@service=visit @api=createVisit
+@service=visit @api=visitLifecycle @kind=scenario
 Feature: orgB visit 예약 생명주기
 
   Background:

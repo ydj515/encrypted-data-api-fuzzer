@@ -1,4 +1,4 @@
-@service=visit @api=cancelVisit
+@service=visit @api=cancelVisit @kind=single-api
 Feature: orgB visit 방문 예약 취소 단건 API 테스트
 
   Background:

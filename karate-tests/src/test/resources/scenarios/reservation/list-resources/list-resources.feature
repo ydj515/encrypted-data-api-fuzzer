@@ -1,4 +1,4 @@
-@service=reservation @api=listResources
+@service=reservation @api=listResources @kind=single-api
 Feature: orgA reservation 자원 목록 조회(본문 기반) 단건 API 테스트
 
   Background:

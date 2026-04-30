@@ -1,4 +1,4 @@
-@service=support @api=createTicket @scenario=llm-data-flow
+@service=support @api=deviceTicketFlow @kind=scenario @scenario=llm-data-flow
 Feature: orgB support 장비 응답 기반 티켓 처리 흐름
 
   Background:

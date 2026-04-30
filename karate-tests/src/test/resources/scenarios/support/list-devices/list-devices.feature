@@ -1,4 +1,4 @@
-@service=support @api=listDevices
+@service=support @api=listDevices @kind=single-api
 Feature: orgB support 장비 목록 조회(본문 기반) 단건 API 테스트
 
   Background:

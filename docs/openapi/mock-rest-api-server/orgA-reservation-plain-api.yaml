@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: |
     orgA 기관의 예약 서비스용 mock plain API 명세입니다.
-    현재 booking/resource/reservation 시나리오를 그대로 사용합니다.
+    reservation Karate 시나리오와 생성 규칙의 source of truth입니다.
 servers:
   - url: http://localhost:18080
     description: Mock REST API Server local server

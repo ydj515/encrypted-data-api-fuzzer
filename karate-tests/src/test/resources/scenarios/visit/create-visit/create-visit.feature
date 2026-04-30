@@ -1,4 +1,4 @@
-@service=visit @api=createVisit
+@service=visit @api=createVisit @kind=single-api
 Feature: orgB visit 방문 예약 생성 단건 API 테스트
 
   Background:

@@ -1,10 +1,10 @@
-@service=reservation @api=createReservation @kind=single-api
-Feature: orgA reservation 예약 생성 단건 API 테스트
+@service=booking @api=createReservation @kind=single-api
+Feature: catsOrg booking 예약 생성 단건 API 테스트
 
   Background:
     * url gatewayUrl
-    * def org = 'orgA'
-    * def service = 'reservation'
+    * def org = 'catsOrg'
+    * def service = 'booking'
     * def basePath = '/cats/' + org + '/' + service
 
   Scenario: 기본 요청 성공

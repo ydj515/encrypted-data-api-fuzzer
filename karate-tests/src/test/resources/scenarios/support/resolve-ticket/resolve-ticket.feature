@@ -1,4 +1,4 @@
-@service=support @api=resolveTicket
+@service=support @api=resolveTicket @kind=single-api
 Feature: orgB support 지원 티켓 해결 처리 단건 API 테스트
 
   Background:

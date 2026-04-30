@@ -1,4 +1,4 @@
-@service=reservation @api=createReservation @scenario=llm-data-flow
+@service=reservation @api=resourceScheduleReservationFlow @kind=scenario @scenario=llm-data-flow
 Feature: orgA reservation 스케줄 응답 기반 예약 흐름
 
   Background:

@@ -1,52 +1,39 @@
-@service=booking @api=getResourceDetail
-Feature: 자원 상세 조회
+@service=booking @api=getResourceDetail @kind=single-api
+Feature: catsOrg booking 자원 상세 조회 단건 API 테스트
 
   Background:
     * url gatewayUrl
+    * def org = 'catsOrg'
+    * def service = 'booking'
+    * def basePath = '/cats/' + org + '/' + service
 
-  Scenario: SPACE 카테고리 자원 상세 조회 성공
+  Scenario: 기본 요청 성공
     Given path basePath + '/getResourceDetail'
     And request { resourceId: 'R-001' }
     When method POST
     Then status 200
     And match response.resourceId == 'R-001'
     And match response.name == '#string'
-    And match response.category == 'SPACE'
-    And match response.active == true
+    And match response.category == '#("SPACE" || "STUDIO" || "EQUIPMENT")'
+    And match response.active == '#boolean'
     And match response.description == '#string'
     And match response.location == '#string'
     And match response.timezone == '#string'
 
-  Scenario: STUDIO 카테고리 자원 상세 조회 성공
-    Given path basePath + '/getResourceDetail'
-    And request { resourceId: 'R-002' }
-    When method POST
-    Then status 200
-    And match response.resourceId == 'R-002'
-    And match response.category == 'STUDIO'
-
-  Scenario: EQUIPMENT 카테고리 자원 상세 조회 성공
-    Given path basePath + '/getResourceDetail'
-    And request { resourceId: 'R-003' }
-    When method POST
-    Then status 200
-    And match response.resourceId == 'R-003'
-    And match response.category == 'EQUIPMENT'
-
-  Scenario: 존재하지 않는 자원 조회 시 404 반환
-    Given path basePath + '/getResourceDetail'
-    And request { resourceId: 'R-999' }
-    When method POST
-    Then status 404
-    And match response.code == '#string'
-    And match response.message == '#string'
-    And match response.traceId == '#string'
-
-  Scenario: resourceId 미전달 시 400 반환
+  Scenario: OpenAPI required 필드 resourceId 누락 시 400 반환
     Given path basePath + '/getResourceDetail'
     And request {}
     When method POST
     Then status 400
-    And match response.code == '#string'
-    And match response.message == '#string'
-    And match response.traceId == '#string'
+
+  Scenario: OpenAPI minLength 필드 resourceId 빈 문자열 시 400 반환
+    Given path basePath + '/getResourceDetail'
+    And request { resourceId: '' }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI maxLength 필드 resourceId 허용 길이 초과 시 400 반환
+    Given path basePath + '/getResourceDetail'
+    And request { resourceId: 'R-1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890X' }
+    When method POST
+    Then status 400

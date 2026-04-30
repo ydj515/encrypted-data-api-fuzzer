@@ -1,10 +1,10 @@
-@service=reservation @api=cancelReservation @kind=single-api
-Feature: orgA reservation 예약 취소 단건 API 테스트
+@service=booking @api=cancelReservation @kind=single-api
+Feature: catsOrg booking 예약 취소 단건 API 테스트
 
   Background:
     * url gatewayUrl
-    * def org = 'orgA'
-    * def service = 'reservation'
+    * def org = 'catsOrg'
+    * def service = 'booking'
     * def basePath = '/cats/' + org + '/' + service
 
   Scenario: 기본 요청 성공
@@ -36,19 +36,19 @@ Feature: orgA reservation 예약 취소 단건 API 테스트
     When method POST
     Then status 400
 
-  Scenario: OpenAPI minLength 필드 reservationId 최소 길이 미만 시 400 반환
+  Scenario: OpenAPI minLength 필드 reservationId 빈 문자열 시 400 반환
     Given path basePath + '/cancelReservation'
     And request { reservationId: '', reason: 'karate generated teardown' }
     When method POST
     Then status 400
 
-  Scenario: OpenAPI maxLength 필드 reservationId 최대 길이 초과 시 400 반환
+  Scenario: OpenAPI maxLength 필드 reservationId 허용 길이 초과 시 400 반환
     Given path basePath + '/cancelReservation'
-    And request { reservationId: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', reason: 'karate generated teardown' }
+    And request { reservationId: 'RSV-1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890X', reason: 'karate generated teardown' }
     When method POST
     Then status 400
 
-  Scenario: OpenAPI minLength 필드 reason 최소 길이 미만 시 400 반환
+  Scenario: OpenAPI minLength 필드 reason 빈 문자열 시 400 반환
     Given path basePath + '/cancelReservation'
     And request { reservationId: 'RSV-550e8400-e29b-41d4-a716-446655440000', reason: '' }
     When method POST

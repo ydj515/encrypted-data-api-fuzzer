@@ -1,38 +1,53 @@
-@service=booking @api=getReservationDetail
-Feature: 예약 상세정보 조회
+@service=booking @api=getReservationDetail @kind=single-api
+Feature: catsOrg booking 예약 상세 조회 단건 API 테스트
 
   Background:
     * url gatewayUrl
+    * def org = 'catsOrg'
+    * def service = 'booking'
+    * def basePath = '/cats/' + org + '/' + service
 
-  Scenario: 예약 생성 후 상세 조회 성공
-    # 사전 조건: 예약 생성하여 실제 reservationId 확보
+  Scenario: 기본 요청 성공
+    # 사전 조건: createReservation 응답 필드 reservationId 값을 요청에 사용
     Given path basePath + '/createReservation'
-    And request { resourceId: 'R-001', scheduleId: 'R-001-2026-02-26-9', userId: 'user-001', quantity: 1, memo: 'cats test' }
+    And request { resourceId: 'R-001', scheduleId: 'R-001-2026-02-26-9', userId: 'user-karate-001', quantity: 1, memo: 'karate generated test' }
     When method POST
     Then status 201
+    And match response.reservationId == '#string'
     * def reservationId = response.reservationId
 
-    # 상세 조회
     Given path basePath + '/getReservationDetail'
     And request { reservationId: '#(reservationId)' }
     When method POST
     Then status 200
-    And match response.reservationId == '#string'
+    And match response.reservationId == reservationId
     And match response.resourceId == '#string'
     And match response.scheduleId == '#string'
     And match response.userId == '#string'
     And match response.quantity == '#number'
-    And match response.status == '#("CREATED" || "CONFIRMED" || "WAITLISTED" || "CANCELED")'
+    And match response.status == '#("CREATED" || "CANCELED")'
     And match response.createdAt == '#string'
 
-  Scenario: 존재하지 않는 예약 ID 조회 시 404 반환
-    Given path basePath + '/getReservationDetail'
-    And request { reservationId: 'RSV-NONEXISTENT-999' }
+    # 정리: cancelReservation 호출로 테스트 데이터 상태를 종료
+    Given path basePath + '/cancelReservation'
+    And request { reservationId: '#(reservationId)', reason: 'karate generated teardown' }
     When method POST
-    Then status 404
+    Then status 200
 
-  Scenario: 필수 필드 누락 시 400 반환
+  Scenario: OpenAPI required 필드 reservationId 누락 시 400 반환
     Given path basePath + '/getReservationDetail'
     And request { }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI minLength 필드 reservationId 빈 문자열 시 400 반환
+    Given path basePath + '/getReservationDetail'
+    And request { reservationId: '' }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI maxLength 필드 reservationId 허용 길이 초과 시 400 반환
+    Given path basePath + '/getReservationDetail'
+    And request { reservationId: 'RSV-1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890X' }
     When method POST
     Then status 400

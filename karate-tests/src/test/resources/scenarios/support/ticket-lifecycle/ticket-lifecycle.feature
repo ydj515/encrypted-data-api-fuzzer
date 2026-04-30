@@ -1,4 +1,4 @@
-@service=support @api=createTicket
+@service=support @api=ticketLifecycle @kind=scenario
 Feature: orgB support 티켓 생명주기
 
   Background:

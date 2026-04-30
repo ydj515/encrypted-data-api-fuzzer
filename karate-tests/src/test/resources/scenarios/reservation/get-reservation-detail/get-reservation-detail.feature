@@ -1,4 +1,4 @@
-@service=reservation @api=getReservationDetail
+@service=reservation @api=getReservationDetail @kind=single-api
 Feature: orgA reservation 예약 상세 조회(POST 호환) 단건 API 테스트
 
   Background:
@@ -37,5 +37,17 @@ Feature: orgA reservation 예약 상세 조회(POST 호환) 단건 API 테스트
   Scenario: OpenAPI required 필드 reservationId 누락 시 400 반환
     Given path basePath + '/getReservationDetail'
     And request { }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI minLength 필드 reservationId 최소 길이 미만 시 400 반환
+    Given path basePath + '/getReservationDetail'
+    And request { reservationId: '' }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI maxLength 필드 reservationId 최대 길이 초과 시 400 반환
+    Given path basePath + '/getReservationDetail'
+    And request { reservationId: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' }
     When method POST
     Then status 400

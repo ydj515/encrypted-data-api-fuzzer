@@ -1,4 +1,4 @@
-@service=visit @api=getVisitDetail
+@service=visit @api=getVisitDetail @kind=single-api
 Feature: orgB visit 방문 예약 상세 조회(POST 호환) 단건 API 테스트
 
   Background:

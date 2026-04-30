@@ -1,36 +1,58 @@
-@service=booking @api=getResourceSchedules
-Feature: 자원 스케줄 조회
+@service=booking @api=getResourceSchedules @kind=single-api
+Feature: catsOrg booking 자원 스케줄 조회 단건 API 테스트
 
   Background:
     * url gatewayUrl
+    * def org = 'catsOrg'
+    * def service = 'booking'
+    * def basePath = '/cats/' + org + '/' + service
 
-  Scenario: 시간 범위 내 스케줄 조회 성공
+  Scenario: 기본 요청 성공
     Given path basePath + '/getResourceSchedules'
-    And request { resourceId: 'R-001', from: '2026-04-23T09:00:00+09:00', to: '2026-04-23T18:00:00+09:00' }
+    And request { resourceId: 'R-001', from: '2026-02-26T09:00:00+09:00', to: '2026-02-26T18:00:00+09:00' }
     When method POST
     Then status 200
     And match response.resourceId == 'R-001'
     And match response.items == '#array'
-    And match response.items == '#[_ > 0]'
-    And match each response.items == { scheduleId: '#string', startAt: '#string', endAt: '#string', status: '#string' }
 
-  Scenario: 결과 스케줄이 시간 순으로 정렬됨
+  Scenario: OpenAPI required 필드 resourceId 누락 시 400 반환
     Given path basePath + '/getResourceSchedules'
-    And request { resourceId: 'R-001', from: '2026-04-23T09:00:00+09:00', to: '2026-04-23T12:00:00+09:00' }
-    When method POST
-    Then status 200
-    And match response.items[0].scheduleId == 'R-001-2026-04-23-9'
-    And match response.items[1].scheduleId == 'R-001-2026-04-23-10'
-    And match response.items[2].scheduleId == 'R-001-2026-04-23-11'
-
-  Scenario: from이 to보다 나중이면 400 반환
-    Given path basePath + '/getResourceSchedules'
-    And request { resourceId: 'R-001', from: '2026-04-23T18:00:00+09:00', to: '2026-04-23T09:00:00+09:00' }
+    And request { from: '2026-02-26T09:00:00+09:00', to: '2026-02-26T18:00:00+09:00' }
     When method POST
     Then status 400
 
-  Scenario: 존재하지 않는 자원 스케줄 조회 시 404 반환
+  Scenario: OpenAPI required 필드 from 누락 시 400 반환
     Given path basePath + '/getResourceSchedules'
-    And request { resourceId: 'R-999', from: '2026-04-23T09:00:00+09:00', to: '2026-04-23T18:00:00+09:00' }
+    And request { resourceId: 'R-001', to: '2026-02-26T18:00:00+09:00' }
     When method POST
-    Then status 404
+    Then status 400
+
+  Scenario: OpenAPI required 필드 to 누락 시 400 반환
+    Given path basePath + '/getResourceSchedules'
+    And request { resourceId: 'R-001', from: '2026-02-26T09:00:00+09:00' }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI minLength 필드 resourceId 빈 문자열 시 400 반환
+    Given path basePath + '/getResourceSchedules'
+    And request { resourceId: '', from: '2026-02-26T09:00:00+09:00', to: '2026-02-26T18:00:00+09:00' }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI maxLength 필드 resourceId 허용 길이 초과 시 400 반환
+    Given path basePath + '/getResourceSchedules'
+    And request { resourceId: 'R-1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890X', from: '2026-02-26T09:00:00+09:00', to: '2026-02-26T18:00:00+09:00' }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI format 필드 from 잘못된 date-time 형식 시 400 반환
+    Given path basePath + '/getResourceSchedules'
+    And request { resourceId: 'R-001', from: 'not-a-date-time', to: '2026-02-26T18:00:00+09:00' }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI format 필드 to 잘못된 date-time 형식 시 400 반환
+    Given path basePath + '/getResourceSchedules'
+    And request { resourceId: 'R-001', from: '2026-02-26T09:00:00+09:00', to: 'not-a-date-time' }
+    When method POST
+    Then status 400

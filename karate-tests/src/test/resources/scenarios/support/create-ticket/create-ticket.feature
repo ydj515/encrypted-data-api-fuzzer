@@ -1,4 +1,4 @@
-@service=support @api=createTicket
+@service=support @api=createTicket @kind=single-api
 Feature: orgB support 지원 티켓 생성 단건 API 테스트
 
   Background:

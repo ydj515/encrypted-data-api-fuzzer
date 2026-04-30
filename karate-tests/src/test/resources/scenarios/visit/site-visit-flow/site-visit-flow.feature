@@ -1,4 +1,4 @@
-@service=visit @api=createVisit @scenario=llm-data-flow
+@service=visit @api=siteVisitFlow @kind=scenario @scenario=llm-data-flow
 Feature: orgB visit site 응답 기반 방문 예약 흐름
 
   Background:

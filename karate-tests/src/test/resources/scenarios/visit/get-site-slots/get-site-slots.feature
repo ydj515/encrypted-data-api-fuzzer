@@ -1,4 +1,4 @@
-@service=visit @api=getSiteSlots
+@service=visit @api=getSiteSlots @kind=single-api
 Feature: orgB visit site 일별 slot 조회(본문 기반) 단건 API 테스트
 
   Background:

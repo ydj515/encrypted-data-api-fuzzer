@@ -1,4 +1,4 @@
-@service=reservation @api=getResourceDetail
+@service=reservation @api=getResourceDetail @kind=single-api
 Feature: orgA reservation 자원 상세 조회(POST 호환) 단건 API 테스트
 
   Background:
@@ -23,5 +23,17 @@ Feature: orgA reservation 자원 상세 조회(POST 호환) 단건 API 테스트
   Scenario: OpenAPI required 필드 resourceId 누락 시 400 반환
     Given path basePath + '/getResourceDetail'
     And request { }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI minLength 필드 resourceId 최소 길이 미만 시 400 반환
+    Given path basePath + '/getResourceDetail'
+    And request { resourceId: '' }
+    When method POST
+    Then status 400
+
+  Scenario: OpenAPI maxLength 필드 resourceId 최대 길이 초과 시 400 반환
+    Given path basePath + '/getResourceDetail'
+    And request { resourceId: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' }
     When method POST
     Then status 400
