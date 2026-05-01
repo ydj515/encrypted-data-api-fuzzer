@@ -13,6 +13,7 @@ public class RunFilter {
     String org;
     String service;
     String api;
+    String httpMethod;
     TestSource source;
     TestStatus status;
     Integer httpStatus;

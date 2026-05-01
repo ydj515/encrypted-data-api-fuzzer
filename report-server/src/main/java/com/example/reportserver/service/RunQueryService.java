@@ -8,6 +8,7 @@ import com.example.reportserver.model.TestStatus;
 import com.example.reportserver.contract.GatewayContract;
 import com.example.reportserver.service.dto.CaseFilter;
 import com.example.reportserver.service.dto.RunFilter;
+import com.example.reportserver.service.dto.RunHistoryRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +39,13 @@ public class RunQueryService {
 
     public List<TestCase> findCases(String runId) {
         return runStorageService.findCases(runId);
+    }
+
+    public List<RunHistoryRow> findHistoryRows(String org, String service) {
+        return runStorageService.listAllRuns().stream()
+                .filter(run -> matches(org, run.getOrg()) && matches(service, run.getService()))
+                .map(this::toHistoryRow)
+                .toList();
     }
 
     public List<TestCase> findScenarioCases(String runId, CaseFilter filter) {
@@ -140,8 +148,9 @@ public class RunQueryService {
 
     private boolean matchesCase(TestCase c, RunFilter f) {
         if (hasValue(f.getApi()) && !f.getApi().equals(c.getApi())) return false;
+        if (hasValue(f.getHttpMethod()) && !equalsIgnoreCase(f.getHttpMethod(), c.getHttpMethod())) return false;
         if (f.getHttpStatus() != null && f.getHttpStatus() != c.getHttpStatus()) return false;
-        if (hasValue(f.getCaseName()) && !containsIgnoreCase(c.getName(), f.getCaseName())) return false;
+        if (hasValue(f.getCaseName()) && !matchesCaseName(c, f.getCaseName())) return false;
         if (hasValue(f.getEndpoint()) && !containsIgnoreCase(c.getEndpoint(), f.getEndpoint())) return false;
         return true;
     }
@@ -158,14 +167,66 @@ public class RunQueryService {
 
     private boolean hasCaseLevelFilter(RunFilter filter) {
         return hasValue(filter.getApi())
+                || hasValue(filter.getHttpMethod())
                 || filter.getHttpStatus() != null
                 || hasValue(filter.getCaseName())
                 || hasValue(filter.getEndpoint());
     }
 
+    private RunHistoryRow toHistoryRow(TestRun run) {
+        TreeSet<String> apis = new TreeSet<>();
+        TreeSet<String> caseNames = new TreeSet<>();
+        TreeSet<String> endpoints = new TreeSet<>();
+        TreeSet<String> httpMethods = new TreeSet<>();
+        TreeSet<Integer> httpStatuses = new TreeSet<>();
+
+        if (hasValue(run.getApi())) {
+            apis.add(run.getApi());
+        }
+
+        runStorageService.findCases(run.getId()).forEach(testCase -> {
+            if (hasValue(testCase.getApi())) {
+                apis.add(testCase.getApi());
+            }
+            if (hasValue(testCase.getName())) {
+                caseNames.add(testCase.getName());
+            }
+            if (hasValue(testCase.getScenarioName())) {
+                caseNames.add(testCase.getScenarioName());
+            }
+            if (hasValue(testCase.getEndpoint())) {
+                endpoints.add(testCase.getEndpoint());
+            }
+            if (hasValue(testCase.getHttpMethod())) {
+                httpMethods.add(testCase.getHttpMethod().toUpperCase(Locale.ROOT));
+            }
+            if (testCase.getHttpStatus() > 0) {
+                httpStatuses.add(testCase.getHttpStatus());
+            }
+        });
+
+        return RunHistoryRow.builder()
+                .run(run)
+                .apis(List.copyOf(apis))
+                .caseNames(List.copyOf(caseNames))
+                .endpoints(List.copyOf(endpoints))
+                .httpMethods(List.copyOf(httpMethods))
+                .httpStatuses(List.copyOf(httpStatuses))
+                .build();
+    }
+
     private boolean containsIgnoreCase(String value, String query) {
         return value != null
                 && value.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));
+    }
+
+    private boolean equalsIgnoreCase(String left, String right) {
+        return left != null && right != null && left.equalsIgnoreCase(right);
+    }
+
+    private boolean matchesCaseName(TestCase testCase, String query) {
+        return containsIgnoreCase(testCase.getName(), query)
+                || containsIgnoreCase(testCase.getScenarioName(), query);
     }
 
     private boolean matches(String expected, String actual) {
