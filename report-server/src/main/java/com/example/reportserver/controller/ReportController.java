@@ -52,6 +52,27 @@ public class ReportController {
         return ResponseEntity.ok(serviceSummaryService.listServiceSummaries());
     }
 
+    @GetMapping("/api/services/{org}/{service}/history-metadata")
+    @ResponseBody
+    public ResponseEntity<List<RunHistoryRow>> apiHistoryMetadata(
+            @PathVariable String org,
+            @PathVariable String service,
+            @RequestParam(required = false) String api,
+            @RequestParam(required = false) String method,
+            @RequestParam(required = false) TestSource source,
+            @RequestParam(required = false) TestStatus status,
+            @RequestParam(required = false) Integer httpStatus,
+            @RequestParam(required = false) String caseName,
+            @RequestParam(required = false) String endpoint,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime to
+    ) {
+        RunFilter filter = buildRunFilter(
+                org, service, api, method, source, status, httpStatus, caseName, endpoint, from, to
+        );
+        return ResponseEntity.ok(runQueryService.findHistoryRowsWithCaseMetadata(filter));
+    }
+
     @GetMapping("/services/{org}/{service}")
     public String history(
             @PathVariable String org,
@@ -67,16 +88,17 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime to,
             Model model
     ) {
-        RunFilter filter = RunFilter.builder()
-                .org(org).service(service).api(api).httpMethod(method).source(source).status(status)
-                .httpStatus(httpStatus).caseName(caseName).endpoint(endpoint)
-                .from(from).to(to)
-                .build();
+        RunFilter filter = buildRunFilter(
+                org, service, api, method, source, status, httpStatus, caseName, endpoint, from, to
+        );
 
-        List<RunHistoryRow> historyRows = runQueryService.findHistoryRows(org, service);
+        List<RunHistoryRow> historyRows = runQueryService.findHistoryRows(filter);
+        long visibleHistoryCount = historyRows.stream().filter(RunHistoryRow::isVisible).count();
 
         model.addAttribute("historyRows", historyRows);
         model.addAttribute("historyPageDataJson", writeJson(historyRows));
+        model.addAttribute("visibleHistoryCount", visibleHistoryCount);
+        model.addAttribute("historyMetadataComplete", runQueryService.requiresHistoryCaseMetadata(filter));
         model.addAttribute("org", org);
         model.addAttribute("service", service);
         model.addAttribute("filter", filter);
@@ -102,11 +124,9 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime to
     ) {
-        RunFilter filter = RunFilter.builder()
-                .org(org).service(service).api(api).httpMethod(method).source(source).status(status)
-                .httpStatus(httpStatus).caseName(caseName).endpoint(endpoint)
-                .from(from).to(to)
-                .build();
+        RunFilter filter = buildRunFilter(
+                org, service, api, method, source, status, httpStatus, caseName, endpoint, from, to
+        );
         return ResponseEntity.ok(runQueryService.findRuns(filter));
     }
 
@@ -153,5 +173,25 @@ public class ReportController {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize view model", e);
         }
+    }
+
+    private RunFilter buildRunFilter(
+            String org,
+            String service,
+            String api,
+            String method,
+            TestSource source,
+            TestStatus status,
+            Integer httpStatus,
+            String caseName,
+            String endpoint,
+            LocalDateTime from,
+            LocalDateTime to
+    ) {
+        return RunFilter.builder()
+                .org(org).service(service).api(api).httpMethod(method).source(source).status(status)
+                .httpStatus(httpStatus).caseName(caseName).endpoint(endpoint)
+                .from(from).to(to)
+                .build();
     }
 }

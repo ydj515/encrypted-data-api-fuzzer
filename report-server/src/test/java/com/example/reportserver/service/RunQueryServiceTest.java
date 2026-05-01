@@ -215,22 +215,85 @@ class RunQueryServiceTest {
     }
 
     @Test
-    void findHistoryRows_실행별필터메타데이터를실제이력기준으로반환한다() {
+    void findHistoryRows_필터가없으면케이스메타데이터없이실행메타만반환한다() {
         storageService.saveRun(run("history-run", "getResourceDetail", 1, TestSource.KARATE, 2, 0));
         storageService.saveCases("history-run", List.of(
                 testCase("history-run", "createReservation", 201, TestStatus.PASS, "POST"),
                 testCase("history-run", "listResources", 200, TestStatus.PASS, "GET")
         ));
 
-        List<RunHistoryRow> rows = queryService.findHistoryRows("catsOrg", "booking");
+        List<RunHistoryRow> rows = queryService.findHistoryRows(RunFilter.builder()
+                .org("catsOrg")
+                .service("booking")
+                .build());
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).getApis()).containsExactly("getResourceDetail");
+        assertThat(rows.get(0).getCaseNames()).isEmpty();
+        assertThat(rows.get(0).getEndpoints()).isEmpty();
+        assertThat(rows.get(0).getHttpMethods()).isEmpty();
+        assertThat(rows.get(0).getHttpStatuses()).isEmpty();
+        assertThat(rows.get(0).isVisible()).isTrue();
+    }
+
+    @Test
+    void findHistoryRows_케이스레벨필터가있으면케이스메타데이터와초기노출여부를계산한다() {
+        storageService.saveRun(run("matched-run", "getResourceDetail", 1, TestSource.KARATE, 2, 0));
+        storageService.saveCases("matched-run", List.of(
+                testCase("matched-run", "createReservation", 201, TestStatus.PASS, "POST"),
+                testCase("matched-run", "listResources", 200, TestStatus.PASS, "GET")
+        ));
+        storageService.saveRun(run("hidden-run", "getResourceDetail", 2, TestSource.KARATE, 1, 0));
+        storageService.saveCases("hidden-run", List.of(
+                testCase("hidden-run", "listResources", 200, TestStatus.PASS, "GET")
+        ));
+
+        List<RunHistoryRow> rows = queryService.findHistoryRows(RunFilter.builder()
+                .org("catsOrg")
+                .service("booking")
+                .httpStatus(201)
+                .build());
+
+        assertThat(rows).hasSize(2);
+        RunHistoryRow matched = rows.stream()
+                .filter(row -> row.getRun().getId().equals("matched-run"))
+                .findFirst()
+                .orElseThrow();
+        RunHistoryRow hidden = rows.stream()
+                .filter(row -> row.getRun().getId().equals("hidden-run"))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(matched.isVisible()).isTrue();
+        assertThat(matched.getApis())
+                .containsExactly("createReservation", "getResourceDetail", "listResources");
+        assertThat(matched.getCaseNames())
+                .containsExactly("createReservation case", "listResources case");
+        assertThat(matched.getEndpoints())
+                .containsExactly("/cats/catsOrg/booking/createReservation", "/cats/catsOrg/booking/listResources");
+        assertThat(matched.getHttpMethods())
+                .containsExactly("GET", "POST");
+        assertThat(matched.getHttpStatuses())
+                .containsExactly(200, 201);
+        assertThat(hidden.isVisible()).isFalse();
+    }
+
+    @Test
+    void findHistoryRowsWithCaseMetadata_필터가없어도지연필터후보용케이스메타데이터를반환한다() {
+        storageService.saveRun(run("history-run", "getResourceDetail", 1, TestSource.KARATE, 2, 0));
+        storageService.saveCases("history-run", List.of(
+                testCase("history-run", "createReservation", 201, TestStatus.PASS, "POST"),
+                testCase("history-run", "listResources", 200, TestStatus.PASS, "GET")
+        ));
+
+        List<RunHistoryRow> rows = queryService.findHistoryRowsWithCaseMetadata(RunFilter.builder()
+                .org("catsOrg")
+                .service("booking")
+                .build());
 
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).getApis())
                 .containsExactly("createReservation", "getResourceDetail", "listResources");
-        assertThat(rows.get(0).getCaseNames())
-                .containsExactly("createReservation case", "listResources case");
-        assertThat(rows.get(0).getEndpoints())
-                .containsExactly("/cats/catsOrg/booking/createReservation", "/cats/catsOrg/booking/listResources");
         assertThat(rows.get(0).getHttpMethods())
                 .containsExactly("GET", "POST");
         assertThat(rows.get(0).getHttpStatuses())

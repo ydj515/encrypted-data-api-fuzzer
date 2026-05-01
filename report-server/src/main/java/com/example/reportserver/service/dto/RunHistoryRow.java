@@ -15,4 +15,5 @@ public class RunHistoryRow {
     List<String> endpoints;
     List<String> httpMethods;
     List<Integer> httpStatuses;
+    boolean visible;
 }

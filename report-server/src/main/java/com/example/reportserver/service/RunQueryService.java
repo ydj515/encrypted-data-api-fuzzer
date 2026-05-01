@@ -42,9 +42,30 @@ public class RunQueryService {
     }
 
     public List<RunHistoryRow> findHistoryRows(String org, String service) {
+        return findHistoryRows(RunFilter.builder().org(org).service(service).build());
+    }
+
+    public List<RunHistoryRow> findHistoryRows(RunFilter filter) {
+        return findHistoryRows(filter, requiresHistoryCaseMetadata(filter));
+    }
+
+    public List<RunHistoryRow> findHistoryRowsWithCaseMetadata(RunFilter filter) {
+        return findHistoryRows(filter, true);
+    }
+
+    public boolean requiresHistoryCaseMetadata(RunFilter filter) {
+        return hasCaseLevelFilter(filter);
+    }
+
+    private List<RunHistoryRow> findHistoryRows(RunFilter filter, boolean includeCaseMetadata) {
         return runStorageService.listAllRuns().stream()
-                .filter(run -> matches(org, run.getOrg()) && matches(service, run.getService()))
-                .map(this::toHistoryRow)
+                .filter(run -> matches(filter.getOrg(), run.getOrg()) && matches(filter.getService(), run.getService()))
+                .map(run -> {
+                    List<TestCase> cases = includeCaseMetadata
+                            ? runStorageService.findCases(run.getId())
+                            : List.of();
+                    return toHistoryRow(run, cases, matchesRunFilter(run, filter) && matchesCaseFilter(run, cases, filter));
+                })
                 .toList();
     }
 
@@ -143,7 +164,20 @@ public class RunQueryService {
         if (!hasCaseLevelFilter(f)) {
             return true;
         }
+        if (matchesRunApiOnlyFilter(run, f)) {
+            return true;
+        }
         return runStorageService.findCases(run.getId()).stream().anyMatch(c -> matchesCase(c, f));
+    }
+
+    private boolean matchesCaseFilter(TestRun run, List<TestCase> cases, RunFilter f) {
+        if (!hasCaseLevelFilter(f)) {
+            return true;
+        }
+        if (matchesRunApiOnlyFilter(run, f)) {
+            return true;
+        }
+        return cases.stream().anyMatch(c -> matchesCase(c, f));
     }
 
     private boolean matchesCase(TestCase c, RunFilter f) {
@@ -173,7 +207,20 @@ public class RunQueryService {
                 || hasValue(filter.getEndpoint());
     }
 
-    private RunHistoryRow toHistoryRow(TestRun run) {
+    private boolean hasCaseLevelFilterExceptApi(RunFilter filter) {
+        return hasValue(filter.getHttpMethod())
+                || filter.getHttpStatus() != null
+                || hasValue(filter.getCaseName())
+                || hasValue(filter.getEndpoint());
+    }
+
+    private boolean matchesRunApiOnlyFilter(TestRun run, RunFilter filter) {
+        return hasValue(filter.getApi())
+                && !hasCaseLevelFilterExceptApi(filter)
+                && filter.getApi().equals(run.getApi());
+    }
+
+    private RunHistoryRow toHistoryRow(TestRun run, List<TestCase> cases, boolean visible) {
         TreeSet<String> apis = new TreeSet<>();
         TreeSet<String> caseNames = new TreeSet<>();
         TreeSet<String> endpoints = new TreeSet<>();
@@ -184,7 +231,7 @@ public class RunQueryService {
             apis.add(run.getApi());
         }
 
-        runStorageService.findCases(run.getId()).forEach(testCase -> {
+        cases.forEach(testCase -> {
             if (hasValue(testCase.getApi())) {
                 apis.add(testCase.getApi());
             }
@@ -212,6 +259,7 @@ public class RunQueryService {
                 .endpoints(List.copyOf(endpoints))
                 .httpMethods(List.copyOf(httpMethods))
                 .httpStatuses(List.copyOf(httpStatuses))
+                .visible(visible)
                 .build();
     }
 

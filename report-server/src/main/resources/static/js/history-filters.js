@@ -20,12 +20,15 @@
   const fromInput = document.getElementById("historyFromFilter");
   const toInput = document.getElementById("historyToFilter");
 
-  if (!form || !table || !bootstrapEl || !apiInput || !apiPanel) {
+  if (!form || !bootstrapEl || !apiInput || !apiPanel) {
     return;
   }
 
-  const pageData = JSON.parse(bootstrapEl.textContent || "[]");
-  const rows = Array.from(table.querySelectorAll("tbody tr"));
+  let pageData = JSON.parse(bootstrapEl.textContent || "[]");
+  let metadataComplete = bootstrapEl.dataset.metadataComplete === "true";
+  let metadataLoadPromise = null;
+  const metadataUrl = bootstrapEl.dataset.metadataUrl || "";
+  const rows = table ? Array.from(table.querySelectorAll("tbody tr")) : [];
   const methodOrder = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"];
   const maxAutocompleteOptions = 8;
 
@@ -89,47 +92,67 @@
     return left.localeCompare(right);
   };
 
-  const metadataByRunId = new Map(
-    pageData.map((row) => [
-      row.run.id,
-      {
-        apis: toTextList(row.apis),
-        caseNames: toTextList(row.caseNames),
-        endpoints: toTextList(row.endpoints),
-        methods: toTextList(row.httpMethods).map((value) => value.toUpperCase()),
-        httpStatuses: toStringList(row.httpStatuses),
-      },
-    ]),
-  );
+  const emptyMetadata = () => ({
+    apis: [],
+    caseNames: [],
+    endpoints: [],
+    methods: [],
+    httpStatuses: [],
+  });
 
-  const rowStates = rows.map((row) => {
-    const runId = row.dataset.runId || "";
-    const metadata = metadataByRunId.get(runId) || {
-      apis: [],
-      caseNames: [],
-      endpoints: [],
-      methods: [],
-      httpStatuses: [],
-    };
+  const metadataByRunId = new Map();
+
+  const normalizeMetadataRow = (row) => ({
+    apis: toTextList(row.apis),
+    caseNames: toTextList(row.caseNames),
+    endpoints: toTextList(row.endpoints),
+    methods: toTextList(row.httpMethods).map((value) => value.toUpperCase()),
+    httpStatuses: toStringList(row.httpStatuses),
+  });
+
+  const applyPageData = (data) => {
+    data
+      .filter((row) => row && row.run && row.run.id)
+      .forEach((row) => metadataByRunId.set(row.run.id, normalizeMetadataRow(row)));
+  };
+
+  applyPageData(pageData);
+
+  const applyMetadataToState = (state) => {
+    const metadata = metadataByRunId.get(state.runId) || emptyMetadata();
     const apis = createSearchableList(metadata.apis);
     const caseNames = createSearchableList(metadata.caseNames);
     const endpoints = createSearchableList(metadata.endpoints);
 
-    return {
+    state.apis = apis.values;
+    state.apisNormalized = apis.normalized;
+    state.caseNames = caseNames.values;
+    state.caseNamesNormalized = caseNames.normalized;
+    state.endpoints = endpoints.values;
+    state.endpointsNormalized = endpoints.normalized;
+    state.methods = metadata.methods;
+    state.httpStatuses = metadata.httpStatuses;
+  };
+
+  const rowStates = rows.map((row) => {
+    const runId = row.dataset.runId || "";
+    const state = {
       row,
       runId,
       source: row.dataset.source || "",
       status: row.dataset.status || "",
       startedAtMs: row.dataset.startedAt ? parseDateMs(row.dataset.startedAt, false) : null,
-      apis: apis.values,
-      apisNormalized: apis.normalized,
-      caseNames: caseNames.values,
-      caseNamesNormalized: caseNames.normalized,
-      endpoints: endpoints.values,
-      endpointsNormalized: endpoints.normalized,
-      methods: metadata.methods,
-      httpStatuses: metadata.httpStatuses,
+      apis: [],
+      apisNormalized: [],
+      caseNames: [],
+      caseNamesNormalized: [],
+      endpoints: [],
+      endpointsNormalized: [],
+      methods: [],
+      httpStatuses: [],
     };
+    applyMetadataToState(state);
+    return state;
   });
 
   const currentFilters = () => ({
@@ -193,6 +216,35 @@
   };
 
   const visibleStates = (excludeKey) => rowStates.filter((state) => matchesFilters(state, excludeKey));
+
+  const ensureMetadataLoaded = () => {
+    if (metadataComplete || !metadataUrl) {
+      return Promise.resolve();
+    }
+    if (!metadataLoadPromise) {
+      metadataLoadPromise = fetch(metadataUrl + location.search, {
+        headers: { Accept: "application/json" },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          pageData = Array.isArray(data) ? data : [];
+          applyPageData(pageData);
+          rowStates.forEach(applyMetadataToState);
+          metadataComplete = true;
+          bootstrapEl.dataset.metadataComplete = "true";
+        })
+        .catch((error) => {
+          metadataLoadPromise = null;
+          console.warn("히스토리 필터 메타데이터를 불러오지 못했습니다.", error);
+        });
+    }
+    return metadataLoadPromise;
+  };
 
   const populateSelect = (select, values, currentValue) => {
     if (!select) {
@@ -402,7 +454,7 @@
       emptyState.style.display = visible === 0 ? "" : "none";
     }
     if (tableWrapper) {
-      tableWrapper.style.display = visible === 0 ? "none" : "";
+      tableWrapper.classList.toggle("is-hidden", visible === 0);
     }
 
     updateUrl();
@@ -466,9 +518,21 @@
     statusFilter.addEventListener("change", refresh);
   }
   if (methodFilter) {
+    methodFilter.addEventListener("focus", () => {
+      ensureMetadataLoaded().then(syncSelectOptions);
+    });
+    methodFilter.addEventListener("mousedown", () => {
+      ensureMetadataLoaded().then(syncSelectOptions);
+    });
     methodFilter.addEventListener("change", refresh);
   }
   if (httpStatusFilter) {
+    httpStatusFilter.addEventListener("focus", () => {
+      ensureMetadataLoaded().then(syncSelectOptions);
+    });
+    httpStatusFilter.addEventListener("mousedown", () => {
+      ensureMetadataLoaded().then(syncSelectOptions);
+    });
     httpStatusFilter.addEventListener("change", refresh);
   }
   if (fromInput) {
@@ -480,12 +544,14 @@
 
   autocompleteConfigs.forEach((config) => {
     config.input.addEventListener("focus", () => {
-      renderAutocomplete(config);
+      ensureMetadataLoaded().then(() => renderAutocomplete(config));
     });
 
     config.input.addEventListener("input", () => {
-      renderAutocomplete(config);
-      refresh();
+      ensureMetadataLoaded().then(() => {
+        renderAutocomplete(config);
+        refresh();
+      });
     });
 
     config.input.addEventListener("keydown", (event) => {

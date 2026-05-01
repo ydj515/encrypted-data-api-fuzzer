@@ -242,17 +242,17 @@
   </div>
 
   <div class="result-header">
-    <span id="historyRunCount" class="run-count" th:text="${historyRows.size() + '개 배치 실행'}"></span>
+    <span id="historyRunCount" class="run-count" th:text="${visibleHistoryCount + '개 배치 실행'}"></span>
   </div>
 
   <div id="historyEmptyState"
        class="empty-state"
-       th:style="${#lists.isEmpty(historyRows)} ? '' : 'display:none'">
+       th:style="${visibleHistoryCount == 0} ? '' : 'display:none'">
     조건에 맞는 배치 실행 이력이 없습니다.
   </div>
 
-  <div class="table-wrapper" th:classappend="${#lists.isEmpty(historyRows)} ? 'is-hidden' : ''">
-    <table id="historyRunsTable" th:unless="${#lists.isEmpty(historyRows)}" class="table table-hover align-middle mb-0">
+  <div class="table-wrapper" th:classappend="${visibleHistoryCount == 0} ? 'is-hidden' : ''">
+    <table id="historyRunsTable" class="table table-hover align-middle mb-0">
       <thead>
         <tr>
           <th>수행 시각</th>
@@ -267,6 +267,7 @@
       <tbody>
         <tr th:each="row : ${historyRows}"
             th:with="run=${row.run},runStatus=${run.failCount == 0 ? 'PASS' : 'FAIL'}"
+            th:style="${row.visible} ? '' : 'display:none'"
             th:attr="data-run-id=${run.id},data-source=${run.source != null ? run.source.name() : ''},data-status=${runStatus},data-started-at=${run.startedAt != null ? #temporals.format(run.startedAt, 'yyyy-MM-dd''T''HH:mm:ss') : ''}">
           <td>
             <span class="run-time"
@@ -314,9 +315,12 @@
   </div>
 </main>
 
-<script id="historyPageData" type="application/json" th:utext="${historyPageDataJson}">[]</script>
+<script id="historyPageData"
+        type="application/json"
+        th:attr="data-metadata-url=@{/api/services/{org}/{service}/history-metadata(org=${org},service=${service})},data-metadata-complete=${historyMetadataComplete}"
+        th:utext="${historyPageDataJson}">[]</script>
 <th:block th:replace="~{fragments/layout :: bootstrapScript}"></th:block>
-<script th:src="@{/js/history-filters.js(v='20260501-2')}"></script>
+<script th:src="@{/js/history-filters.js(v='20260501-3')}"></script>
 
 </body>
 </html>

@@ -179,7 +179,7 @@
       <tbody>
         <tr th:each="c : ${cases}"
             th:attr="data-status=${c.status != null ? c.status.name() : ''},data-kind=${c.kind != null ? c.kind.name() : ''},data-api=${c.api != null ? c.api : ''},data-name=${c.name != null ? c.name : ''},data-scenario-name=${c.scenarioName != null ? c.scenarioName : ''},data-endpoint=${c.endpoint != null ? c.endpoint : ''},data-method=${c.httpMethod != null ? c.httpMethod : ''},data-http-status=${c.httpStatus > 0 ? c.httpStatus : ''}"
-            th:classappend="${c.status != null and c.status.name() == 'FAIL'} ? 'row-fail' : 'row-pass'">
+            th:classappend="${c.status != null ? (c.status.name() == 'FAIL' ? 'row-fail' : 'row-pass') : ''}">
           <td th:unless="${#lists.isEmpty(availableKinds)}">
             <span th:if="${c.kind != null and c.kind.name() == 'SINGLE_API'}" class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle">단건</span>
             <span th:if="${c.kind != null and c.kind.name() == 'SCENARIO'}" class="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle">시나리오</span>
