@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="metaCard">
+  <section class="meta-card card border-0 shadow-sm">
+    <div class="meta-card-header card-body pb-0">
+      <div class="run-id" th:text="${run.id}"></div>
+      <a th:if="${run.reportPath != null and !#strings.isEmpty(run.reportPath)}"
+         th:href="${run.reportPath}"
+         target="_blank"
+         class="report-link report-button">원본 리포트 열기</a>
+    </div>
+
+    <div class="meta-grid card-body pt-3">
+      <div class="meta-item">
+        <span class="meta-label">서비스</span>
+        <span class="meta-value" th:text="${run.org + ' / ' + run.service}"></span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">소스</span>
+        <span th:if="${run.source != null and run.source.name() == 'KARATE'}" class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle">KARATE</span>
+        <span th:if="${run.source != null and run.source.name() == 'CATS'}" class="badge rounded-pill bg-info-subtle text-info-emphasis border border-info-subtle">CATS</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">대상 API</span>
+        <span th:if="${run.api != null and !#strings.isEmpty(run.api)}"
+              class="api-chip badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle text-start" th:text="${run.api}"></span>
+        <span th:unless="${run.api != null and !#strings.isEmpty(run.api)}"
+              class="api-all small fst-italic text-body-tertiary">전체</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">수행 시각</span>
+        <span class="meta-value"
+              th:if="${run.startedAt != null}"
+              th:text="${#temporals.format(run.startedAt, 'yyyy-MM-dd HH:mm:ss')}"></span>
+        <span class="meta-value" th:unless="${run.startedAt != null}" style="color:#d1d5db;">-</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">소요 시간</span>
+        <span class="meta-value"
+              th:text="${#numbers.formatDecimal(run.durationMs / 1000.0, 1, 1) + 's'}"></span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">결과</span>
+        <span th:if="${run.failCount == 0}" class="badge rounded-pill text-bg-success">PASS</span>
+        <span th:unless="${run.failCount == 0}" class="badge rounded-pill text-bg-danger">FAIL</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">케이스 집계</span>
+        <div class="stat-group">
+          <div class="stat-item">
+            <span class="stat-label">전체</span>
+            <span class="stat-number stat-total" th:text="${run.totalCount}"></span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">통과</span>
+            <span class="stat-number stat-pass" th:text="${run.passCount}"></span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">실패</span>
+            <span class="stat-number stat-fail" th:text="${run.failCount}"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</th:block>
+
+<th:block th:fragment="filterPanel">
+  <section class="filter-panel card border-0 shadow-sm">
+    <div class="card-body">
+    <div class="filter-title">필터</div>
+    <div class="filter-grid" th:classappend="${#lists.isEmpty(availableKinds)} ? 'filter-grid--no-kind' : ''">
+      <div class="filter-group">
+        <label for="statusFilter">상태</label>
+        <select id="statusFilter" class="form-select form-select-sm">
+          <option value="">전체</option>
+          <option th:each="s : ${allStatuses}" th:value="${s.name()}" th:text="${s.name()}"></option>
+        </select>
+      </div>
+
+      <div th:unless="${#lists.isEmpty(availableKinds)}" class="filter-group">
+        <label for="kindFilter">유형</label>
+        <select id="kindFilter" class="form-select form-select-sm">
+          <option value="">전체</option>
+          <option th:each="k : ${availableKinds}" th:value="${k.name()}" th:text="${k.label}"></option>
+        </select>
+      </div>
+
+      <div class="filter-group filter-group--wide">
+        <label for="apiFilterInput">API</label>
+        <div class="autocomplete">
+          <input id="apiFilterInput" type="text" class="form-control form-control-sm" placeholder="API 검색" autocomplete="off">
+          <div id="apiAutocompletePanel" class="autocomplete-panel" hidden></div>
+        </div>
+      </div>
+
+      <div class="filter-group filter-group--wide">
+        <label for="caseNameFilterInput">케이스 명</label>
+        <div class="autocomplete">
+          <input id="caseNameFilterInput"
+                 type="text"
+                 class="form-control form-control-sm"
+                 placeholder="케이스 명 검색"
+                 autocomplete="off">
+          <div id="caseNameAutocompletePanel" class="autocomplete-panel" hidden></div>
+        </div>
+      </div>
+
+      <div class="filter-group filter-group--wide">
+        <label for="endpointFilterInput">엔드포인트</label>
+        <div class="autocomplete">
+          <input id="endpointFilterInput"
+                 type="text"
+                 class="form-control form-control-sm"
+                 placeholder="엔드포인트 검색"
+                 autocomplete="off">
+          <div id="endpointAutocompletePanel" class="autocomplete-panel" hidden></div>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label for="methodFilter">메서드</label>
+        <select id="methodFilter" class="form-select form-select-sm">
+          <option value="">전체</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="httpStatusFilter">HTTP 상태 코드</label>
+        <select id="httpStatusFilter" class="form-select form-select-sm">
+          <option value="">전체</option>
+        </select>
+      </div>
+
+      <div class="filter-actions">
+        <button type="button"
+                id="resetFilterBtn"
+                class="btn btn-outline-secondary icon-btn icon-btn--with-label"
+                aria-label="필터 초기화"
+                title="필터 초기화">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M16.667 10A6.667 6.667 0 1 1 15 5.585" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16.667 3.333v3.334h-3.334" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>필터 초기화</span>
+        </button>
+      </div>
+    </div>
+    </div>
+  </section>
+</th:block>
+
+<th:block th:fragment="casesSection">
+  <div class="section-header">
+    <div class="section-title">테스트 케이스</div>
+    <div class="case-count" id="caseCount" th:text="${cases.size() + '개 케이스'}"></div>
+  </div>
+
+  <div id="emptyState" class="empty-state" style="display:none">
+    조건과 일치하는 시나리오 케이스가 없습니다.
+  </div>
+
+  <div class="table-wrapper" th:classappend="${#lists.isEmpty(cases)} ? 'is-hidden' : ''">
+    <table id="casesTable" class="table table-hover align-middle mb-0 report-table">
+      <thead>
+        <tr>
+          <th th:unless="${#lists.isEmpty(availableKinds)}" class="col-kind">유형</th>
+          <th class="col-api">API</th>
+          <th class="col-name">케이스 명</th>
+          <th class="col-endpoint">엔드포인트</th>
+          <th class="col-method">메서드</th>
+          <th class="col-http">HTTP</th>
+          <th class="col-status">상태</th>
+          <th class="col-duration">소요 시간</th>
+          <th class="col-failure">실패 메시지</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="c : ${cases}"
+            th:attr="data-status=${c.status != null ? c.status.name() : ''},data-kind=${c.kind != null ? c.kind.name() : ''},data-api=${c.api != null ? c.api : ''},data-name=${c.name != null ? c.name : ''},data-scenario-name=${c.scenarioName != null ? c.scenarioName : ''},data-endpoint=${c.endpoint != null ? c.endpoint : ''},data-method=${c.httpMethod != null ? c.httpMethod : ''},data-http-status=${c.httpStatus > 0 ? c.httpStatus : ''}"
+            th:classappend="${c.status != null ? (c.status.name() == 'FAIL' ? 'row-fail' : 'row-pass') : ''}">
+          <td th:unless="${#lists.isEmpty(availableKinds)}">
+            <span th:if="${c.kind != null and c.kind.name() == 'SINGLE_API'}" class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle">단건</span>
+            <span th:if="${c.kind != null and c.kind.name() == 'SCENARIO'}" class="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle">시나리오</span>
+            <span th:unless="${c.kind != null}" class="small text-body-tertiary">-</span>
+          </td>
+          <td>
+            <span th:if="${c.api != null and !#strings.isEmpty(c.api)}"
+                  class="api-chip badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle text-start" th:text="${c.api}"></span>
+            <span th:unless="${c.api != null and !#strings.isEmpty(c.api)}"
+                  class="small text-body-tertiary">-</span>
+          </td>
+          <td>
+            <div class="case-name"
+                 th:text="${c.name != null ? c.name : '-'}"
+                 th:title="${c.name}"></div>
+            <div th:if="${c.scenarioName != null and !#strings.isEmpty(c.scenarioName) and c.scenarioName != c.name}"
+                 class="scenario-name"
+                 th:text="${c.scenarioName}"
+                 th:title="${c.scenarioName}"></div>
+          </td>
+          <td>
+            <span class="endpoint"
+                  th:text="${c.endpoint != null ? c.endpoint : '-'}"
+                  th:title="${c.endpoint}"></span>
+          </td>
+          <td th:classappend="${c.httpMethod == 'MULTIPLE' or c.httpMethod == null} ? 'td-center' : ''">
+            <span th:if="${c.httpMethod != null}"
+                  th:classappend="${
+                    c.httpMethod == 'GET'    ? 'method-get'    :
+                    c.httpMethod == 'POST'   ? 'method-post'   :
+                    c.httpMethod == 'PUT'    ? 'method-put'    :
+                    c.httpMethod == 'PATCH'  ? 'method-patch'  :
+                    c.httpMethod == 'DELETE' ? 'method-delete' : 'method-other'
+                  }"
+                  class="method"
+                  th:text="${c.httpMethod}"></span>
+            <span th:unless="${c.httpMethod != null}" class="small text-body-tertiary">-</span>
+          </td>
+          <td th:classappend="${c.httpStatus <= 0} ? 'td-center' : ''">
+            <span th:if="${c.httpStatus > 0}"
+                  th:classappend="${
+                    c.httpStatus >= 200 and c.httpStatus < 300 ? 'http-2xx' :
+                    c.httpStatus >= 300 and c.httpStatus < 400 ? 'http-3xx' :
+                    c.httpStatus >= 400 and c.httpStatus < 500 ? 'http-4xx' :
+                    c.httpStatus >= 500                        ? 'http-5xx' : 'http-other'
+                  }"
+                  class="http-code"
+                  th:text="${c.httpStatus}"></span>
+            <span th:unless="${c.httpStatus > 0}" class="small text-body-tertiary">-</span>
+          </td>
+          <td>
+            <span th:if="${c.status != null and c.status.name() == 'PASS'}" class="badge rounded-pill text-bg-success">PASS</span>
+            <span th:if="${c.status != null and c.status.name() == 'FAIL'}" class="badge rounded-pill text-bg-danger">FAIL</span>
+            <span th:unless="${c.status != null}" class="small text-body-tertiary">-</span>
+          </td>
+          <td>
+            <span class="duration"
+                  th:if="${c.durationMs > 0}"
+                  th:text="${#numbers.formatDecimal(c.durationMs / 1000.0, 1, 1) + 's'}"></span>
+            <span th:unless="${c.durationMs > 0}" class="small text-body-tertiary">-</span>
+          </td>
+          <td>
+            <span th:if="${c.failureMsg != null and !#strings.isEmpty(c.failureMsg)}"
+                  class="failure-msg"
+                  th:text="${c.failureMsg}"
+                  th:attr="data-msg=${c.failureMsg}"></span>
+            <span th:unless="${c.failureMsg != null and !#strings.isEmpty(c.failureMsg)}"
+                  class="small text-body-tertiary">-</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</th:block>
+
+<div id="failurePopover" class="failure-popover" hidden th:fragment="failurePopover"></div>
+</body>
+</html>

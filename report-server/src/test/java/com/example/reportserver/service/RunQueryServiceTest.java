@@ -8,6 +8,7 @@ import com.example.reportserver.model.TestSource;
 import com.example.reportserver.model.TestStatus;
 import com.example.reportserver.service.dto.CaseFilter;
 import com.example.reportserver.service.dto.RunFilter;
+import com.example.reportserver.service.dto.RunHistoryRow;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -87,6 +88,58 @@ class RunQueryServiceTest {
     }
 
     @Test
+    void findRuns_httpMethod필터는대소문자구분없이같은케이스에서일치해야한다() {
+        storageService.saveRun(run("full-run", null, 1, TestSource.CATS, 1, 1));
+        storageService.saveCases("full-run", List.of(
+                testCase("full-run", "createReservation", 404, TestStatus.FAIL, "POST"),
+                testCase("full-run", "listResources", 200, TestStatus.PASS, "GET")
+        ));
+
+        List<TestRun> matched = queryService.findRuns(RunFilter.builder()
+                .org("catsOrg")
+                .service("booking")
+                .httpMethod("get")
+                .httpStatus(200)
+                .build());
+        List<TestRun> mismatched = queryService.findRuns(RunFilter.builder()
+                .org("catsOrg")
+                .service("booking")
+                .httpMethod("delete")
+                .build());
+
+        assertThat(matched).extracting(TestRun::getId).containsExactly("full-run");
+        assertThat(mismatched).isEmpty();
+    }
+
+    @Test
+    void findRuns_caseName필터는scenarioName에도매칭한다() {
+        storageService.saveRun(run("detail-run", null, 1, TestSource.KARATE, 1, 0));
+        storageService.saveCases("detail-run", List.of(
+                TestCase.builder()
+                        .id("detail-run-1")
+                        .runId("detail-run")
+                        .caseType(TestCaseType.SCENARIO)
+                        .api("reservationLifecycle")
+                        .name("생성 후 조회")
+                        .scenarioName("예약 생애주기 시나리오")
+                        .endpoint("/cats/catsOrg/booking/reservationLifecycle")
+                        .httpMethod("POST")
+                        .httpStatus(200)
+                        .status(TestStatus.PASS)
+                        .durationMs(1)
+                        .build()
+        ));
+
+        List<TestRun> runs = queryService.findRuns(RunFilter.builder()
+                .org("catsOrg")
+                .service("booking")
+                .caseName("생애주기")
+                .build());
+
+        assertThat(runs).extracting(TestRun::getId).containsExactly("detail-run");
+    }
+
+    @Test
     void findAvailableApis_메타와케이스에서등장한Api를모두반환한다() {
         storageService.saveRun(run("full-run", null, 1, TestSource.CATS, 1, 0));
         storageService.saveCases("full-run", List.of(
@@ -162,6 +215,92 @@ class RunQueryServiceTest {
     }
 
     @Test
+    void findHistoryRows_필터가없으면케이스메타데이터없이실행메타만반환한다() {
+        storageService.saveRun(run("history-run", "getResourceDetail", 1, TestSource.KARATE, 2, 0));
+        storageService.saveCases("history-run", List.of(
+                testCase("history-run", "createReservation", 201, TestStatus.PASS, "POST"),
+                testCase("history-run", "listResources", 200, TestStatus.PASS, "GET")
+        ));
+
+        List<RunHistoryRow> rows = queryService.findHistoryRows(RunFilter.builder()
+                .org("catsOrg")
+                .service("booking")
+                .build());
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).getApis()).containsExactly("getResourceDetail");
+        assertThat(rows.get(0).getCaseNames()).isEmpty();
+        assertThat(rows.get(0).getEndpoints()).isEmpty();
+        assertThat(rows.get(0).getHttpMethods()).isEmpty();
+        assertThat(rows.get(0).getHttpStatuses()).isEmpty();
+        assertThat(rows.get(0).isVisible()).isTrue();
+    }
+
+    @Test
+    void findHistoryRows_케이스레벨필터가있으면케이스메타데이터와초기노출여부를계산한다() {
+        storageService.saveRun(run("matched-run", "getResourceDetail", 1, TestSource.KARATE, 2, 0));
+        storageService.saveCases("matched-run", List.of(
+                testCase("matched-run", "createReservation", 201, TestStatus.PASS, "POST"),
+                testCase("matched-run", "listResources", 200, TestStatus.PASS, "GET")
+        ));
+        storageService.saveRun(run("hidden-run", "getResourceDetail", 2, TestSource.KARATE, 1, 0));
+        storageService.saveCases("hidden-run", List.of(
+                testCase("hidden-run", "listResources", 200, TestStatus.PASS, "GET")
+        ));
+
+        List<RunHistoryRow> rows = queryService.findHistoryRows(RunFilter.builder()
+                .org("catsOrg")
+                .service("booking")
+                .httpStatus(201)
+                .build());
+
+        assertThat(rows).hasSize(2);
+        RunHistoryRow matched = rows.stream()
+                .filter(row -> row.getRun().getId().equals("matched-run"))
+                .findFirst()
+                .orElseThrow();
+        RunHistoryRow hidden = rows.stream()
+                .filter(row -> row.getRun().getId().equals("hidden-run"))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(matched.isVisible()).isTrue();
+        assertThat(matched.getApis())
+                .containsExactly("createReservation", "getResourceDetail", "listResources");
+        assertThat(matched.getCaseNames())
+                .containsExactly("createReservation case", "listResources case");
+        assertThat(matched.getEndpoints())
+                .containsExactly("/cats/catsOrg/booking/createReservation", "/cats/catsOrg/booking/listResources");
+        assertThat(matched.getHttpMethods())
+                .containsExactly("GET", "POST");
+        assertThat(matched.getHttpStatuses())
+                .containsExactly(200, 201);
+        assertThat(hidden.isVisible()).isFalse();
+    }
+
+    @Test
+    void findHistoryRowsWithCaseMetadata_필터가없어도지연필터후보용케이스메타데이터를반환한다() {
+        storageService.saveRun(run("history-run", "getResourceDetail", 1, TestSource.KARATE, 2, 0));
+        storageService.saveCases("history-run", List.of(
+                testCase("history-run", "createReservation", 201, TestStatus.PASS, "POST"),
+                testCase("history-run", "listResources", 200, TestStatus.PASS, "GET")
+        ));
+
+        List<RunHistoryRow> rows = queryService.findHistoryRowsWithCaseMetadata(RunFilter.builder()
+                .org("catsOrg")
+                .service("booking")
+                .build());
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).getApis())
+                .containsExactly("createReservation", "getResourceDetail", "listResources");
+        assertThat(rows.get(0).getHttpMethods())
+                .containsExactly("GET", "POST");
+        assertThat(rows.get(0).getHttpStatuses())
+                .containsExactly(200, 201);
+    }
+
+    @Test
     void findScenarioCases_시나리오행만반환하고필터를적용한다() {
         storageService.saveRun(run("detail-run", null, 1, TestSource.KARATE, 2, 0));
         storageService.saveCases("detail-run", List.of(
@@ -216,6 +355,10 @@ class RunQueryServiceTest {
         return testCase(runId, api, httpStatus, status, TestCaseType.SCENARIO, null, api + " case");
     }
 
+    private TestCase testCase(String runId, String api, int httpStatus, TestStatus status, String httpMethod) {
+        return testCase(runId, api, httpStatus, status, TestCaseType.SCENARIO, null, api + " case", httpMethod);
+    }
+
     private TestCase testCase(
             String runId,
             String api,
@@ -224,6 +367,19 @@ class RunQueryServiceTest {
             TestCaseType caseType,
             TestCaseKind kind,
             String name
+    ) {
+        return testCase(runId, api, httpStatus, status, caseType, kind, name, "POST");
+    }
+
+    private TestCase testCase(
+            String runId,
+            String api,
+            int httpStatus,
+            TestStatus status,
+            TestCaseType caseType,
+            TestCaseKind kind,
+            String name,
+            String httpMethod
     ) {
         return TestCase.builder()
                 .id(runId + "-" + api + "-" + httpStatus)
@@ -234,7 +390,7 @@ class RunQueryServiceTest {
                 .name(name)
                 .scenarioName(name)
                 .endpoint("/cats/catsOrg/booking/" + api)
-                .httpMethod("POST")
+                .httpMethod(httpMethod)
                 .httpStatus(httpStatus)
                 .status(status)
                 .durationMs(1)

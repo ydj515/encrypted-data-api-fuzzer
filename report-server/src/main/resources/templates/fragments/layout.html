@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="headContent(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${title}">API Test Report</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" th:href="@{/vendor/bootstrap/css/bootstrap.min.css}">
+  <link rel="stylesheet" th:href="@{/css/report.css(v='20260501-4')}">
+</th:block>
+<body>
+<header th:fragment="homeHeader" class="report-header shadow-sm">
+  <h1>API Test Report</h1>
+</header>
+
+<header th:fragment="serviceHeader(org, service)" class="report-header shadow-sm">
+  <a th:href="@{/}">API Test Report</a>
+  <span class="sep">/</span>
+  <span class="sep" th:text="${org}">org</span>
+  <span class="sep">/</span>
+  <span class="current" th:text="${service}">service</span>
+</header>
+
+<header th:fragment="detailHeader(run)" class="report-header shadow-sm">
+  <a th:href="@{/}">API Test Report</a>
+  <span class="sep">/</span>
+  <a th:href="@{/services/{org}/{service}(org=${run.org},service=${run.service})}"
+     th:text="${run.org + ' / ' + run.service}">service</a>
+  <span class="sep">/</span>
+  <span class="current" th:text="${run.id}">run</span>
+</header>
+
+<th:block th:fragment="bootstrapScript">
+  <script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
+</th:block>
+</body>
+</html>
