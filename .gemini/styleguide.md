@@ -119,167 +119,197 @@
 - Entity에 비즈니스 로직 과다 포함 여부
 - Lazy Loading으로 인한 사이드 이펙트 가능성
 
+---
+
+## 5. Java 안티패턴
+
+- getter/setter 중심의 빈약한 도메인 모델과 거대한 서비스 클래스 조합
+- `Optional`을 반환값이 아닌 필드/파라미터에 무분별하게 사용하는 패턴
+- 스트림이 더 복잡해졌는데도 “함수형”이라는 이유만으로 유지하는 코드
+- 예외를 너무 넓게 잡거나 checked exception을 무의미하게 상위로 전파하는 방식
+- JPA 엔티티를 API 응답, 서비스 경계, 뷰 모델에 그대로 퍼뜨리는 구조
+- 루프 내부 Repository 호출로 N+1을 유발하는 구현
+
+---
+
+## 6. Java 좋은 패턴
+
+- `record`, `enum`, 명확한 DTO/도메인 타입으로 경계를 분리하는 구조
+- stream/lambda를 읽기 쉬운 범위에서만 사용하고, 복잡하면 명시적 루프로 돌아가는 판단
+- 예외를 비즈니스 의미에 맞게 분리하고 HTTP/API 경계에서 일관되게 매핑하는 방식
+- 트랜잭션 경계와 영속성 접근 책임이 서비스/리포지토리 계층에 분명히 나뉜 설계
+- 컬렉션 처리, null 처리, 불변성 유지가 코드 의도를 명확히 드러내는 구현
+
+---
+
+## 리뷰 시 핵심 질문
+
+- 이 코드는 Java답게 명확하고 유지보수하기 쉬운가?
+- 타입과 객체 구조가 도메인 의도를 충분히 표현하는가?
+- 예외와 트랜잭션 경계가 호출 흐름에 맞게 설계되어 있는가?
+- JPA/Spring 사용이 편의성만 높이고 결합도나 성능 문제를 숨기고 있지는 않은가?
+
 # Spring Framework Code Review Guidelines
 
-이 문서는 **Spring Framework (Spring Boot, Spring MVC, Spring Data JPA)** 기반 프로젝트에서  
-Gemini가 코드 리뷰 시 **추가로 고려해야 할 프레임워크 특화 가이드라인**입니다.
+이 문서는 **Spring Framework (Spring Boot, Spring MVC, Spring Data JPA)** 기반 프로젝트에서 코드 리뷰 시 추가로 고려해야 할 가이드입니다.
+목표는 **계층 책임 분리**, **트랜잭션과 영속성 경계의 명확화**, **검증과 보안의 일관성**, **운영 안정성**을 함께 확보하는 것입니다.
 
-Base 및 Language(Java) 가이드를 전제로 하며,  
-Spring 특유의 구조·관례·실수 포인트에 집중합니다.
-
----
-
-## 1. Layered Architecture (계층 구조)
-
-### 1.1 Responsibility Separation
-- Controller / Service / Repository 간 책임이 명확히 분리되어 있는지 확인합니다.
-  - **Controller:** 요청/응답 변환, 유효성 검증
-  - **Service:** 비즈니스 로직, 트랜잭션 경계
-  - **Repository:** 영속성 접근
-- Controller에서 비즈니스 로직이 직접 수행되고 있다면 Service로 이동을 제안합니다.
+Base 및 Language(Java) 가이드를 전제로 하며, Spring 특유의 구조와 관례, 자주 놓치는 함정에 집중합니다.
 
 ---
 
-### 1.2 DTO vs Entity
-- API 요청/응답에 **Entity를 직접 노출**하지 않도록 주의합니다.
-- DTO를 통한 명확한 경계가 있는지 확인합니다.
-- 필요 이상으로 DTO가 분산되어 있다면, 역할 기준으로 재정리 제안이 가능합니다.
+## 1. Layered Architecture & Responsibility
+
+- Controller / Service / Repository 간 책임이 명확히 분리되어 있는지 확인
+- Controller는 요청 파싱, 응답 변환, 유효성 검증에 집중하고 비즈니스 로직을 직접 수행하지 않는지 점검
+- Service는 비즈니스 규칙과 트랜잭션 경계를 담당하고, Repository는 영속성 접근에만 머무르는지 검토
+- Scheduler, Event Listener, Batch Job에서도 동일한 책임 분리가 유지되는지 확인
+
+### 리뷰 질문
+
+- 이 로직은 정말 Controller에 있어야 하는가?
+- 트랜잭션과 도메인 규칙이 Service 계층에 모여 있는가?
 
 ---
 
-## 2. Dependency Injection & Bean Design
+## 2. DTO vs Entity Boundary
 
-### 2.1 Constructor Injection
-- 필드 주입(`@Autowired`)보다는 **생성자 주입**을 권장합니다.
-- 테스트 용이성과 불변성 확보 관점에서 리뷰합니다.
+- API 요청/응답에 Entity를 직접 노출하지 않는지 확인
+- 요청 DTO, 응답 DTO, 도메인 모델의 경계가 명확한지 점검
+- Controller가 Entity의 지연 로딩 필드나 깊은 연관관계를 직접 탐색하지 않는지 검토
+- 화면/API 요구사항 때문에 Entity 구조가 왜곡되고 있지 않은지 확인
+
+---
+
+## 3. Dependency Injection & Bean Design
+
+- 필드 주입보다 생성자 주입을 사용하는지 확인
+- Singleton Bean이 상태를 가지지 않는지 점검
+- 지나치게 많은 의존성을 주입받는 Service는 책임 과다 여부를 검토
+- static util이나 전역 접근보다 명시적 의존성 주입이 유지보수에 유리한지 확인
+
+### 좋은 예
 
 ```java
 @RequiredArgsConstructor
 @Service
 public class OrderService {
     private final OrderRepository orderRepository;
+    private final PaymentGateway paymentGateway;
 }
 ```
 
-### 2.2 Bean Scope & Lifecycle
-- Singleton Bean에 상태(state)가 존재하지 않는지 확인합니다.
-- 상태가 필요한 경우, scope 설정 또는 구조 변경을 제안합니다.
+---
 
-⸻
+## 4. Transaction Management
 
-## 3. Transaction Management
+- `@Transactional`이 Service 계층의 명확한 유스케이스 경계에 선언되어 있는지 확인
+- 조회 전용 로직에 `@Transactional(readOnly = true)`를 적용할 수 있는지 검토
+- 외부 API 호출, 파일 I/O, 대기 시간이 긴 작업을 긴 트랜잭션 안에 묶지 않았는지 점검
+- 전파 옵션과 격리 수준이 기본값이 아닌 경우, 분명한 의도와 설명이 있는지 확인
+- 같은 클래스 내부 self-invocation, private method 호출처럼 프록시 기반 트랜잭션이 적용되지 않는 함정을 밟고 있지 않은지 검토
 
-### 3.1 Transaction Boundary
-- @Transactional이 Service 계층에 선언되어 있는지 확인합니다.
-- Controller 또는 Repository에 선언된 트랜잭션은 주의 깊게 리뷰합니다.
+---
 
-⸻
+## 5. Persistence & Query Design
 
-### 3.2 Read-only Optimization
-- 조회 전용 로직에 @Transactional(readOnly = true) 적용 여부를 검토합니다.
-- 불필요한 쓰기 트랜잭션으로 인한 성능 저하 가능성을 지적합니다.
+- 반복문 내부 Repository 호출, 화면 렌더링 중 지연 로딩 등으로 N+1 문제가 생기지 않는지 확인
+- `fetch join`, `@EntityGraph`, 배치 페치, DTO projection 중 상황에 맞는 전략을 선택했는지 검토
+- OSIV에 암묵적으로 기대어 Controller/View 계층에서 Entity를 계속 탐색하지 않는지 점검
+- 벌크 연산 후 영속성 컨텍스트 동기화(clear/flush)가 필요한지 확인
+- 페이징 쿼리와 컬렉션 fetch join을 무리하게 결합해 성능/정합성 문제가 생기지 않는지 검토
 
-⸻
+---
 
-### 3.3 Propagation & Isolation
-- 트랜잭션 전파 옵션이 명확한 의도를 가지고 사용되었는지 확인합니다.
-- 기본값으로 충분한 경우, 불필요한 커스터마이징을 줄이도록 제안합니다.
+## 6. Entity Design
 
-⸻
+- Entity가 도메인 불변식과 핵심 행위를 담되, 인프라/프레젠테이션 책임까지 떠안지 않는지 확인
+- 양방향 연관관계를 기본값처럼 만들지 않고, 필요한 경우에만 최소화하는지 점검
+- `equals` / `hashCode` 구현이 식별자와 영속성 생명주기를 고려하는지 검토
+- 컬렉션 초기화, 생성 메서드, 상태 변경 메서드가 도메인 규칙을 드러내는지 확인
 
-## 4. JPA / Hibernate Considerations
+---
 
-### 4.1 N+1 Problem
-- 반복문 내 Repository 호출 여부를 확인합니다.
-- 다음 대안 중 적절한 방법을 제안합니다.
-- fetch join
-- @EntityGraph
-- Batch Fetching
-- Query 전용 DTO 조회
+## 7. Web Layer & Validation
 
-⸻
+- `@Valid`, `@Validated`, Bean Validation을 일관되게 사용하는지 확인
+- Controller에서 수동 문자열 파싱, null 체크, 비즈니스 조건 검증이 반복되지 않는지 점검
+- 요청 파라미터, path variable, body validation 실패 시 응답 형식이 일관적인지 검토
+- HTTP status code와 응답 스키마가 API 계약에 맞게 유지되는지 확인
 
-### 4.2 Lazy Loading Pitfalls
-- 트랜잭션 범위 밖에서 Lazy Loading이 발생할 가능성 검토
-- Controller 계층에서 Entity 접근 시 주의 필요
-- OSIV에 암묵적으로 의존하지 말고 명시적 조회 전략 사용
+---
 
-⸻
+## 8. Exception Handling
 
-### 4.3 Entity Design
-- Entity에 과도한 비즈니스 로직이 포함되어 있는지 검토
-- 무분별한 양방향 연관관계 지양
-- equals / hashCode 구현 시 식별자 기준 여부 확인
+- `@ControllerAdvice` 기반 전역 예외 처리 전략이 존재하는지 확인
+- 비즈니스 예외와 시스템 예외가 구분되어 있는지 점검
+- 내부 구현 세부사항, SQL 메시지, stack trace가 외부 응답에 노출되지 않는지 검토
+- 같은 예외를 여러 계층에서 중복 로깅해 노이즈를 만들고 있지 않은지 확인
 
-⸻
+---
 
-## 5. Configuration & Properties
+## 9. Security & Authorization
 
-### 5.1 Externalized Configuration
-- 하드코딩된 설정 값(URL, timeout, feature flag 등)이 없는지 확인합니다.
-- application.yml, @ConfigurationProperties 사용 여부 검토
+- 인증이 필요한 엔드포인트와 서비스가 일관되게 보호되는지 확인
+- 권한 체크를 Controller 한 곳에만 두고 Service/도메인 경계에서 빠뜨리지 않는지 점검
+- 민감 정보(토큰, 비밀번호, 주민번호 등)가 로그, 예외 메시지, 응답 DTO에 노출되지 않는지 검토
+- 파일 업로드, 검색 조건, 정렬 파라미터 등 외부 입력이 검증 없이 쿼리나 리소스 접근에 사용되지 않는지 확인
 
-⸻
+---
 
-### 5.2 Profile Usage
-- 환경별 설정이 Profile로 명확히 분리되어 있는지 확인합니다.
-- dev, test, prod 간 설정 혼합 여부를 주의 깊게 리뷰합니다.
+## 10. Configuration & Properties
 
-⸻
+- URL, timeout, feature flag, 자격 증명 등 설정값이 하드코딩되지 않았는지 확인
+- 흩어진 `@Value`보다 `@ConfigurationProperties`로 의미 있는 설정 단위를 묶을 수 있는지 검토
+- `dev`, `test`, `prod` profile 경계가 명확하고 환경별 설정 혼선이 없는지 점검
+- 시작 시점 검증이 필요한 설정값은 fail-fast 하도록 설계되어 있는지 확인
 
-## 6. Exception Handling
+---
 
-### 6.1 Global Exception Handling
-- @ControllerAdvice 기반의 전역 예외 처리가 존재하는지 확인합니다.
-- Controller 단위의 try-catch 남용을 지양하도록 제안합니다.
+## 11. Logging & Observability
 
-⸻
+- info / warn / error 레벨이 상황에 맞게 사용되는지 확인
+- 예외 발생 시 원인 파악에 필요한 문맥(request id, entity id 등)이 로그에 포함되는지 점검
+- PII, 토큰, 비밀번호, 카드 정보 등 민감 데이터가 로그에 남지 않는지 검토
+- 느린 쿼리, 외부 API 지연, 재시도 실패 같은 운영 이슈를 추적할 수 있는지 확인
 
-### 6.2 Exception Mapping
-- 비즈니스 예외가 적절한 HTTP Status Code로 매핑되는지 확인합니다.
-- 메시지가 사용자 친화적인지, 내부 구현이 노출되지 않는지 검토합니다.
+---
 
-⸻
+## 12. Testing Strategy
 
-## 7. Validation
+- 단순 단위 로직 테스트에 `@SpringBootTest`를 기본값처럼 사용하지 않는지 확인
+- `@WebMvcTest`, `@DataJpaTest` 같은 slice test를 적절히 활용하는지 점검
+- Repository, Query, Transaction 동작처럼 실제 인프라 영향이 큰 영역은 통합 테스트가 있는지 검토
+- 테스트 간 DB 상태, 캐시, 이벤트 리스너 영향이 격리되는지 확인
+- Testcontainers 등 실제 의존성을 반영한 검증이 필요한 구간을 식별하고 있는지 점검
 
-### 7.1 Bean Validation
-- 요청 DTO에 @Valid, @NotNull, @NotBlank 등 검증 어노테이션 적용 여부 확인
-- Controller에서 수동 검증 로직이 반복된다면 개선 제안
+---
 
-⸻
+## 13. Spring 안티패턴
 
-## 8. Logging & Observability
+- Controller에 비즈니스 로직, 트랜잭션, 영속성 접근이 몰려 있는 구조
+- Entity를 요청/응답 DTO처럼 직접 노출하는 패턴
+- `@Transactional`을 습관적으로 붙이고 경계를 설명하지 않는 코드
+- OSIV에 기대어 화면/API 직전까지 Entity 그래프를 탐색하는 구현
+- 큰 Service가 너무 많은 Repository와 외부 클라이언트를 동시에 주입받는 상태
+- 전역 예외 처리 없이 Controller마다 `try-catch`를 반복하는 방식
 
-### 8.1 Logging Level
-- info / warn / error 레벨 사용이 적절한지 확인합니다.
-- 예외 발생 시 stack trace 누락 여부 확인
+---
 
-⸻
+## 14. Spring 좋은 패턴
 
-### 8.2 Sensitive Data
-- 로그에 개인정보, 토큰, 비밀번호 등이 포함되지 않도록 주의합니다.
+- Controller, Service, Repository, DTO 경계가 명확한 계층형 설계
+- 트랜잭션 경계와 조회/변경 의도가 코드에서 자연스럽게 드러나는 구현
+- N+1과 지연 로딩 함정을 인지하고 조회 전략을 명시적으로 선택하는 방식
+- Validation, Exception Mapping, Security 정책이 전역적으로 일관된 API 계층
+- 설정, 로깅, 테스트 전략이 운영 환경까지 고려해 정리된 구조
 
-⸻
+---
 
-## 9. Testing (Spring Context)
+## 리뷰 시 핵심 질문
 
-### 9.1 Slice Test
-- 단순 로직 테스트에 @SpringBootTest를 과도하게 사용하지 않았는지 검토
-- @WebMvcTest, @DataJpaTest 등 슬라이스 테스트 활용 제안
-
-⸻
-
-### 9.2 Test Isolation
-- 테스트 간 DB 상태가 격리되어 있는지 확인
-- 테스트 의존 순서가 존재하지 않도록 주의
-
-⸻
-
-## 10. Common Spring Smells (리뷰 시 주의 포인트)
-- God Service (과도하게 비대한 Service 클래스)
-- 무분별한 @Transactional 남용
-- OSIV에 대한 암묵적 의존
-- Repository에서 비즈니스 로직 수행
-- Entity를 API 응답으로 직접 반환
+- 이 로직은 Spring 계층 구조 안에서 올바른 위치에 있는가?
+- 트랜잭션과 영속성 컨텍스트의 경계가 성능과 정합성 측면에서 안전한가?
+- Validation, 예외 처리, 보안 정책이 엔드포인트 전반에서 일관적인가?
+- 지금 편의를 위해 OSIV, Entity 노출, 과한 의존성 같은 장기 리스크를 숨기고 있지는 않은가?
 
